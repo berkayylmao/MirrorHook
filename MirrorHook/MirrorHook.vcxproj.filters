@@ -54,6 +54,9 @@
     <ClInclude Include="inc\imgui\imgui_internal.h">
       <Filter>Helpers\Internal\D3D9\ImGui</Filter>
     </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>default</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -78,5 +81,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="MirrorHook.licenseheader" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="version.rc">
+      <Filter>default</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
