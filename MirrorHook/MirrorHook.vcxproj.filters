@@ -76,4 +76,7 @@
       <Filter>Helpers\Internal\D3D9\ImGui</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="MirrorHook.licenseheader" />
+  </ItemGroup>
 </Project>

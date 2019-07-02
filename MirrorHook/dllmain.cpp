@@ -1,3 +1,28 @@
+/*
+   MIT License
+
+   Copyright (c) 2019 Berkay Yigit <berkay2578@gmail.com>
+      Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+
+   Permission is hereby granted, free of charge, to any person obtaining a copy
+   of this software and associated documentation files (the "Software"), to deal
+   in the Software without restriction, including without limitation the rights
+   to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+   copies of the Software, and to permit persons to whom the Software is
+   furnished to do so, subject to the following conditions:
+
+   The above copyright notice and this permission notice shall be included in all
+   copies or substantial portions of the Software.
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+   LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+   OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+   SOFTWARE.
+*/
+
 #include "stdafx.h"
 #include "Memory.h"
 
@@ -35,7 +60,7 @@ namespace MirrorHookInternals {
 
       bool                     isExtenderReady                   = false;
 
-   #pragma region function hooks
+#pragma region function hooks
       GetDeviceState_t         origGetDeviceState_Keyboard       = nullptr;
       GetDeviceState_t         origGetDeviceState_Mouse          = nullptr;
 
@@ -61,11 +86,11 @@ namespace MirrorHookInternals {
          }
          return retOrigGetDeviceState;
       }
-   #pragma endregion
+#pragma endregion
 
-   #pragma region exported helpers
+#pragma region exported helpers
       HRESULT WINAPI AddExtension(DI8Device deviceType, DI8Extension extensionType, LPVOID extensionAddress) {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          if (!isExtenderReady)
             return FALSE;
 
@@ -75,43 +100,43 @@ namespace MirrorHookInternals {
                switch (deviceType) {
                   case DI8Device::Keyboard:
                   case DI8Device::Mouse:
-                     mGetDeviceStateExtensions[deviceType].push_back(reinterpret_cast<GetDeviceState_t>(extensionAddress));
-                     break;
+                  mGetDeviceStateExtensions[deviceType].push_back(reinterpret_cast<GetDeviceState_t>(extensionAddress));
+                  break;
                   default:
-                     return FALSE;
+                  return FALSE;
                }
                break;
             }
             default:
-               return FALSE;
+            return FALSE;
          }
          return TRUE;
       }
       LPDIRECTINPUT8A WINAPI GetDirectInput8A() {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          if (!isExtenderReady)
             return nullptr;
 
          return di8Instance;
       }
       LPDIRECTINPUTDEVICE8A WINAPI GetDirectInputDevice8A(DI8Device deviceType) {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          if (!isExtenderReady)
             return nullptr;
 
          switch (deviceType) {
             case DI8Device::Keyboard:
-               return device_Keyboard;
+            return device_Keyboard;
             case DI8Device::Mouse:
-               return device_Mouse;
+            return device_Mouse;
          }
          return nullptr;
       }
       bool WINAPI IsReady() {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          return isExtenderReady;
       }
-   #pragma endregion
+#pragma endregion
 
       BOOL CALLBACK enumCallback(LPCDIDEVICEINSTANCEA lpddi, LPVOID) {
          BYTE deviceType = LOBYTE(lpddi->dwDevType);
@@ -177,7 +202,7 @@ namespace MirrorHookInternals {
 
       bool                   isExtenderReady = false;
 
-   #pragma region function hooks
+#pragma region function hooks
       unique_ptr<VTableHook> d3dDeviceHook            = nullptr;
       TestCooperativeLevel_t origTestCooperativeLevel = nullptr;
       BeginScene_t           origBeginScene           = nullptr;
@@ -209,7 +234,7 @@ namespace MirrorHookInternals {
             }
             ImGui::GetIO().KeysDown[VK_F9] = GetKeyState(VK_F9) & 0x8000;
 
-            if (!isImGuiReady) {
+            if (useImGui && !isImGuiReady) {
                ImGui_ImplDX9_Init(d3dWindow, d3dDevice);
                ImGuiIO& io = ImGui::GetIO();
                io.IniFilename = NULL;
@@ -230,10 +255,10 @@ namespace MirrorHookInternals {
             }
             if (useImGui && isImGuiReady) {
                if (infoOverlayFrame_MaxFrame == -1
-                  || infoOverlayFrame < infoOverlayFrame_MaxFrame) {
+                   || infoOverlayFrame < infoOverlayFrame_MaxFrame) {
                   ImGui::SetNextWindowPos(ImVec2(10.0f, 40.0f), ImGuiCond_Once);
                   if (ImGui::Begin("##MirrorHook", nullptr,
-                     ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize)) {
+                      ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize)) {
 
                      ImGui::Text("MirrorHook v1.1");
                      ImGui::Text("https://github.com/berkay2578/MirrorHook");
@@ -260,8 +285,8 @@ namespace MirrorHookInternals {
                         ImGui::Indent(2.5f);
                         {
                            ImGui::Text("GetDeviceState extensions : %d | %d",
-                              DI8Extender::mGetDeviceStateExtensions[DI8Device::Keyboard].size(),
-                              DI8Extender::mGetDeviceStateExtensions[DI8Device::Mouse].size());
+                                       DI8Extender::mGetDeviceStateExtensions[DI8Device::Keyboard].size(),
+                                       DI8Extender::mGetDeviceStateExtensions[DI8Device::Mouse].size());
                         }
                         ImGui::Unindent(2.5f);
                      }
@@ -277,6 +302,7 @@ namespace MirrorHookInternals {
                            ImGui::End();
                            ImGui::Render();
                            useImGui = false;
+                           isImGuiReady = false;
                            return origEndScene(pDevice);
                         }
                      }
@@ -325,53 +351,53 @@ namespace MirrorHookInternals {
          origBeginStateBlock      = d3dDeviceHook->Hook(60, hkBeginStateBlock);
          return retBeginStateBlock;
       }
-   #pragma endregion
+#pragma endregion
 
-   #pragma region exported helpers
+#pragma region exported helpers
       HRESULT WINAPI AddExtension(D3D9Extension extensionType, LPVOID extensionAddress) {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          switch (extensionType) {
             case D3D9Extension::BeginScene:
-               vBeginSceneExtensions.push_back(reinterpret_cast<BeginScene_t>(extensionAddress));
-               break;
+            vBeginSceneExtensions.push_back(reinterpret_cast<BeginScene_t>(extensionAddress));
+            break;
             case D3D9Extension::EndScene:
-               vEndSceneExtensions.push_back(reinterpret_cast<EndScene_t>(extensionAddress));
-               break;
+            vEndSceneExtensions.push_back(reinterpret_cast<EndScene_t>(extensionAddress));
+            break;
             case D3D9Extension::BeforeReset:
-               vBeforeResetExtensions.push_back(reinterpret_cast<Reset_t>(extensionAddress));
-               break;
+            vBeforeResetExtensions.push_back(reinterpret_cast<Reset_t>(extensionAddress));
+            break;
             case D3D9Extension::AfterReset:
-               vAfterResetExtensions.push_back(reinterpret_cast<Reset_t>(extensionAddress));
-               break;
+            vAfterResetExtensions.push_back(reinterpret_cast<Reset_t>(extensionAddress));
+            break;
             default:
-               return FALSE;
+            return FALSE;
          }
          return TRUE;
       }
       HRESULT WINAPI SetTestCooperativeLevelExtension(LPVOID extensionAddress) {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          testCooperativeLevelExtension = reinterpret_cast<TestCooperativeLevel_t>(extensionAddress);
          return TRUE;
       }
       LPDIRECT3DDEVICE9 WINAPI GetD3D9Device() {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          if (!isExtenderReady)
             return nullptr;
 
          return d3dDevice;
       }
       HWND WINAPI GetWindowHandle() {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          if (!isExtenderReady)
             return nullptr;
 
          return d3dWindow;
       }
       bool WINAPI IsReady() {
-      #pragma ExportedFunction
+#pragma ExportedFunction
          return isExtenderReady;
       }
-   #pragma endregion
+#pragma endregion
 
       void Init() {
          DWORD pD3DDevice = NULL;
@@ -407,7 +433,7 @@ namespace MirrorHookInternals {
 
 #pragma region exported helpers
    bool WINAPI PrepareFor(MirrorHook::Game gameType) {
-   #pragma ExportedFunction
+#pragma ExportedFunction
       if (!isInit && !DI8Extender::isExtenderReady && !D3D9Extender::isExtenderReady) {
          Memory::Init();
          switch (gameType) {
@@ -429,11 +455,11 @@ namespace MirrorHookInternals {
       } else return false;
    }
    bool WINAPI IsReady() {
-   #pragma ExportedFunction
+#pragma ExportedFunction
       return isInit;
    }
    bool WINAPI IsShowingInfoOverlay() {
-   #pragma ExportedFunction
+#pragma ExportedFunction
       return D3D9Extender::infoOverlayFrame < D3D9Extender::infoOverlayFrame_MaxFrame;
    }
 #pragma endregion
