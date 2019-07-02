@@ -260,8 +260,8 @@ namespace MirrorHookInternals {
                   if (ImGui::Begin("##MirrorHook", nullptr,
                       ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize)) {
 
-                     ImGui::Text("MirrorHook v1.1");
-                     ImGui::Text("https://github.com/berkay2578/MirrorHook");
+                     ImGui::Text("MirrorHook v1.0");
+                     ImGui::Text("https://github.com/berkayylmao/MirrorHook");
                      ImGui::Text("by berkay(2578)");
                      ImGui::Separator();
 
