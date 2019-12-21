@@ -31,7 +31,8 @@
 namespace Memory64 {
    static CRITICAL_SECTION cs;
    static DWORD64 baseAddress;
-   static DWORD   oldMemoryAccess, memoryAccessAddress;
+   static DWORD   oldMemoryAccess;
+   static DWORD64 memoryAccessAddress;
    static int32_t memoryAccessSize;
 
    static void openMemoryAccess(const DWORD64 address, const bool isAddressAbsolute, const int32_t size) {

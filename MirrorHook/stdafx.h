@@ -31,4 +31,5 @@
 #include <windows.h>
 
 //
+#define D3D11_Build
 #define ExportedFunction comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)

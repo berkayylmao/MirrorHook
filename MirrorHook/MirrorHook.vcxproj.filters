@@ -81,9 +81,6 @@
     <ClInclude Include="inc\imgui\imconfig.h">
       <Filter>Helpers\External\imgui</Filter>
     </ClInclude>
-    <ClInclude Include="inc\imgui\dx9\imgui_impl_dx9.h">
-      <Filter>Helpers\External\imgui\dx9</Filter>
-    </ClInclude>
     <ClInclude Include="inc\imgui\dx11\imgui_impl_dx11.h">
       <Filter>Helpers\External\imgui\dx11</Filter>
     </ClInclude>
@@ -112,9 +109,6 @@
     </ClCompile>
     <ClCompile Include="inc\imgui\imgui.cpp">
       <Filter>Helpers\External\imgui</Filter>
-    </ClCompile>
-    <ClCompile Include="inc\imgui\dx9\imgui_impl_dx9.cpp">
-      <Filter>Helpers\External\imgui\dx9</Filter>
     </ClCompile>
     <ClCompile Include="inc\imgui\dx11\imgui_impl_dx11.cpp">
       <Filter>Helpers\External\imgui\dx11</Filter>

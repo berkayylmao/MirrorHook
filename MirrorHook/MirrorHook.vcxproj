@@ -181,7 +181,6 @@
     <ClInclude Include="Helpers\Memory\VTableHook64.hpp" />
     <ClInclude Include="inc\Definitions.hpp" />
     <ClInclude Include="inc\imgui\dx11\imgui_impl_dx11.h" />
-    <ClInclude Include="inc\imgui\dx9\imgui_impl_dx9.h" />
     <ClInclude Include="inc\imgui\imconfig.h" />
     <ClInclude Include="inc\imgui\imgui.h" />
     <ClInclude Include="inc\imgui\imgui_internal.h" />
@@ -209,9 +208,6 @@
     </ClCompile>
     <ClCompile Include="Helpers\Memory\Memory.cpp" />
     <ClCompile Include="inc\imgui\dx11\imgui_impl_dx11.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
-    </ClCompile>
-    <ClCompile Include="inc\imgui\dx9\imgui_impl_dx9.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="inc\imgui\imgui.cpp">

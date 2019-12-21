@@ -24,24 +24,33 @@
 */
 
 #include "stdafx.h"
+#ifndef D3D11_Build
 #include "Helpers/Memory/Memory.h"
-#include "Helpers/Memory/Memory64.hpp"
 #include "Helpers/Memory/VTableHook.hpp"
+#else
+#include "Helpers/Memory/Memory64.hpp"
 #include "Helpers/Memory/VTableHook64.hpp"
+#endif
 
+#ifndef D3D11_Build
 #include "Helpers/Internal/DI8/DI8Types.h"
 #include "Helpers/Internal/D3D9/D3D9Types.h"
+#include "dx9/imgui_impl_dx9.h"
+#else
 #include "Helpers/Internal/D3D11/D3D11Types.h"
+#include "dx11/imgui_impl_dx11.h"
+#endif
 
 #include "imgui.h"
-#include "dx9/imgui_impl_dx9.h"
-#include "dx11/imgui_impl_dx11.h"
 
 #include "inc/Definitions.hpp"
+#ifndef D3D11_Build
 using MirrorHook::DI8::DI8Device;
 using MirrorHook::DI8::DI8Extension;
 using MirrorHook::D3D9::D3D9Extension;
+#else
 using MirrorHook::D3D11::D3D11Extension;
+#endif
 
 #include <mutex>
 #include <memory>
@@ -53,6 +62,7 @@ using std::map;
 using std::vector;
 
 namespace MirrorHookInternals {
+#ifndef D3D11_Build
    namespace DI8Extender {
       DWORD                    dinput8Address                    = NULL;
 
@@ -426,6 +436,7 @@ namespace MirrorHookInternals {
          isExtenderReady = true;
       }
    }
+#else
    namespace D3D11Extender {
       ID3D11Device*          pD3DDevice                = nullptr;
       ID3D11DeviceContext*   pD3DContext               = nullptr;
@@ -550,15 +561,19 @@ namespace MirrorHookInternals {
          isExtenderReady = true;
       }
    }
+#endif
 
    bool isInit = false;
    DWORD __stdcall Init(LPVOID) {
+   #ifndef D3D11_Build
       if (DI8Extender::dinput8Address)
          DI8Extender::Init();
       if (D3D9Extender::d3dDeviceAddress)
          D3D9Extender::Init();
+   #else
       if (D3D11Extender::pD3DDevice)
          D3D11Extender::Init();
+   #endif
 
       isInit = true;
       return TRUE;
@@ -567,22 +582,26 @@ namespace MirrorHookInternals {
 #pragma region exported helpers
    bool __stdcall PrepareFor(MirrorHook::Game gameType, const wchar_t* windowTitleName) {
    #pragma ExportedFunction
-      if (!isInit && !DI8Extender::isExtenderReady && !D3D9Extender::isExtenderReady) {
-         Memory::Init();
+      if (!isInit) {
          switch (gameType) {
+         #ifndef D3D11_Build
             case MirrorHook::Game::MostWanted:
             {
+               Memory::Init();
                DI8Extender::dinput8Address    = Memory::makeAbsolute(0x582D14);
                D3D9Extender::d3dDeviceAddress = Memory::makeAbsolute(0x582BDC);
             }
             break;
             case MirrorHook::Game::Carbon:
             {
+               Memory::Init();
                DI8Extender::dinput8Address    = Memory::makeAbsolute(0x71F5CC);
                D3D9Extender::d3dDeviceAddress = Memory::makeAbsolute(0x6B0ABC);
-            }
+         }
+         #else
             case MirrorHook::Game::UniversalD3D11:
             {
+               Memory64::Init();
                D3D_FEATURE_LEVEL levels[] ={ D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1 };
                D3D_FEATURE_LEVEL obtainedLevel;
                DXGI_SWAP_CHAIN_DESC sd;
@@ -613,20 +632,24 @@ namespace MirrorHookInternals {
                   return false;
                }
             }
+         #endif
             break;
-         }
+      }
          CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&Init, 0, 0, 0);
          return true;
-      } else return false;
-   }
+   } else return false;
+}
    bool WINAPI IsReady() {
    #pragma ExportedFunction
       return isInit;
    }
    bool WINAPI IsShowingInfoOverlay() {
    #pragma ExportedFunction
-      return (D3D9Extender::infoOverlayFrame < D3D9Extender::infoOverlayFrame_MaxFrame) ||
-         (D3D11Extender::infoOverlayFrame < D3D11Extender::infoOverlayFrame_MaxFrame);
+   #ifndef D3D11_Build
+      return (D3D9Extender::infoOverlayFrame < D3D9Extender::infoOverlayFrame_MaxFrame);
+   #else
+      return (D3D11Extender::infoOverlayFrame < D3D11Extender::infoOverlayFrame_MaxFrame);
+   #endif         
    }
 #pragma endregion
 
