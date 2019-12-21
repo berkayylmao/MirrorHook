@@ -36,7 +36,7 @@ namespace Memory64 {
    static int32_t memoryAccessSize;
 
    static void openMemoryAccess(const DWORD64 address, const bool isAddressAbsolute, const int32_t size) {
-      memoryAccessAddress = address + isAddressAbsolute ? 0 : baseAddress;;
+      memoryAccessAddress = address + (isAddressAbsolute ? 0 : baseAddress);
       memoryAccessSize = size;
       VirtualProtect((LPVOID)memoryAccessAddress, size, PAGE_EXECUTE_READWRITE, &oldMemoryAccess);
    }
@@ -51,7 +51,7 @@ namespace Memory64 {
    }
 
    void writeRaw(const DWORD64 to, const bool isToAbsolute, const int32_t byteCount, ...) {
-      auto addr = to + isToAbsolute ? 0 : baseAddress;
+      auto addr = to + (isToAbsolute ? 0 : baseAddress);
 
       EnterCriticalSection(&cs);
       openMemoryAccess(addr, true, byteCount);
@@ -67,8 +67,8 @@ namespace Memory64 {
    }
 
    static void writeCall(const DWORD64 from, const bool isFromAbsolute, const DWORD64 to, const bool isToAbsolute) {
-      auto addrFrom = from + isFromAbsolute ? 0 : baseAddress;
-      auto addrTo   = to + isToAbsolute ? 0 : baseAddress;
+      auto addrFrom = from + (isFromAbsolute ? 0 : baseAddress);
+      auto addrTo   = to + (isToAbsolute ? 0 : baseAddress);
 
       EnterCriticalSection(&cs);
       openMemoryAccess(addrFrom, true, 5);
@@ -81,8 +81,8 @@ namespace Memory64 {
    }
 
    static void writeJMP(const DWORD64 from, const bool isFromAbsolute, const DWORD64 to, const bool isToAbsolute) {
-      auto addrFrom = from + isFromAbsolute ? 0 : baseAddress;
-      auto addrTo   = to + isToAbsolute ? 0 : baseAddress;
+      auto addrFrom = from + (isFromAbsolute ? 0 : baseAddress);
+      auto addrTo   = to + (isToAbsolute ? 0 : baseAddress);
 
       EnterCriticalSection(&cs);
       openMemoryAccess(addrFrom, true, 5);
@@ -95,7 +95,7 @@ namespace Memory64 {
    }
 
    static void writeNOP(const DWORD64 to, const int32_t amount, const bool isToAbsolute = false) {
-      auto addr = to + isToAbsolute ? 0 : baseAddress;
+      auto addr = to + (isToAbsolute ? 0 : baseAddress);
 
       EnterCriticalSection(&cs);
       openMemoryAccess(addr, true, amount);
