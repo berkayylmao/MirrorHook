@@ -39,13 +39,13 @@ namespace MirrorHook {
    typedef bool(__stdcall* fn_NoParam_ReturnsBool)();
 
    inline bool __stdcall PrepareFor(Game gameType, const wchar_t* windowTitleName) {
-      return reinterpret_cast<fn_PrepareFor>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::PrepareFor"))(gameType, windowTitleName);
+      return reinterpret_cast<fn_PrepareFor>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::PrepareFor"))(gameType, windowTitleName);
    }
    inline bool __stdcall IsReady() {
-      return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::IsReady"))();
+      return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::IsReady"))();
    }
    inline bool __stdcall IsShowingInfoOverlay() {
-      return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::IsShowingInfoOverlay"))();
+      return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::IsShowingInfoOverlay"))();
    }
 
    namespace DI8 {
@@ -66,18 +66,18 @@ namespace MirrorHook {
       typedef LPDIRECTINPUTDEVICE8A(__stdcall* fnGetDirectInputDevice8A)(DI8Device deviceType);
 
       inline HRESULT __stdcall AddExtension(DI8Device deviceType, DI8Extension extensionType, LPVOID extensionAddress) {
-         return reinterpret_cast<fnAddExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::DI8Extender::AddExtension"))
+         return reinterpret_cast<fnAddExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::DI8Extender::AddExtension"))
             (deviceType, extensionType, extensionAddress);
       }
       inline LPDIRECTINPUT8A __stdcall GetDirectInput8A() {
-         return reinterpret_cast<fnGetDirectInput8A>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::DI8Extender::GetDirectInput8A"))();
+         return reinterpret_cast<fnGetDirectInput8A>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::DI8Extender::GetDirectInput8A"))();
       }
       inline LPDIRECTINPUTDEVICE8A __stdcall GetDirectInputDevice8A(DI8Device deviceType) {
-         return reinterpret_cast<fnGetDirectInputDevice8A>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::DI8Extender::GetDirectInputDevice8A"))
+         return reinterpret_cast<fnGetDirectInputDevice8A>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::DI8Extender::GetDirectInputDevice8A"))
             (deviceType);
       }
       inline bool __stdcall IsReady() {
-         return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::DI8Extender::IsReady"))();
+         return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::DI8Extender::IsReady"))();
       }
    }
    namespace D3D9 {
@@ -97,21 +97,21 @@ namespace MirrorHook {
       typedef LPDIRECT3DDEVICE9(__stdcall* fnGetD3D9Device)();
 
       inline HRESULT __stdcall AddExtension(D3D9Extension extensionType, LPVOID extensionAddress) {
-         return reinterpret_cast<fnAddExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D9Extender::AddExtension"))
+         return reinterpret_cast<fnAddExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::AddExtension"))
             (extensionType, extensionAddress);
       }
       inline HRESULT __stdcall SetTestCooperativeLevelExtension(LPVOID extensionAddress) {
-         return reinterpret_cast<fnSetTestCooperativeLevelExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D9Extender::SetTestCooperativeLevelExtension"))
+         return reinterpret_cast<fnSetTestCooperativeLevelExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::SetTestCooperativeLevelExtension"))
             (extensionAddress);
       }
       inline HWND __stdcall GetWindowHandle() {
-         return reinterpret_cast<fnGetWindowHandle>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D9Extender::GetWindowHandle"))();
+         return reinterpret_cast<fnGetWindowHandle>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::GetWindowHandle"))();
       }
       inline LPDIRECT3DDEVICE9 __stdcall GetD3D9Device() {
-         return reinterpret_cast<fnGetD3D9Device>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D9Extender::GetD3D9Device"))();
+         return reinterpret_cast<fnGetD3D9Device>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::GetD3D9Device"))();
       }
       inline bool __stdcall IsReady() {
-         return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D9Extender::IsReady"))();
+         return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::IsReady"))();
       }
    }
    namespace D3D11 {
@@ -127,18 +127,18 @@ namespace MirrorHook {
       typedef ID3D11DeviceContext*(__stdcall* fnGetD3D11DeviceContext)();
 
       inline HRESULT __stdcall AddExtension(D3D11Extension extensionType, LPVOID extensionAddress) {
-         return reinterpret_cast<fnAddExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D11Extender::AddExtension"))
+         return reinterpret_cast<fnAddExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::AddExtension"))
             (extensionType, extensionAddress);
       }
       inline ID3D11Device* __stdcall GetD3D9Device() {
-         return reinterpret_cast<fnGetD3D11Device>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D11Extender::GetD3D11Device"))();
+         return reinterpret_cast<fnGetD3D11Device>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::GetD3D11Device"))();
       }
       inline ID3D11DeviceContext* __stdcall GetD3D11DeviceContext() {
-         return reinterpret_cast<fnGetD3D11DeviceContext>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D11Extender::GetD3D11DeviceContext"))();
+         return reinterpret_cast<fnGetD3D11DeviceContext>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::GetD3D11DeviceContext"))();
 
       }
       inline bool __stdcall IsReady() {
-         return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D11Extender::IsReady"))();
+         return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::IsReady"))();
       }
    }
 
