@@ -25,6 +25,8 @@
 
 #pragma once
 #include "stdafx.h"
-#include <dinput.h>
+#include <d3d11.h>
 
-typedef HRESULT(WINAPI* GetDeviceState_t)(HINSTANCE, DWORD, LPVOID);
+namespace D3D11Types {
+   typedef HRESULT(__stdcall* Present_t)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
+}
