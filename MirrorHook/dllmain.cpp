@@ -25,7 +25,9 @@
 
 #include "stdafx.h"
 #include "Helpers/Memory/Memory.h"
+#include "Helpers/Memory/Memory64.hpp"
 #include "Helpers/Memory/VTableHook.hpp"
+#include "Helpers/Memory/VTableHook64.hpp"
 
 #include "Helpers/Internal/DI8/DI8Types.h"
 #include "Helpers/Internal/D3D9/D3D9Types.h"
@@ -440,7 +442,7 @@ namespace MirrorHookInternals {
       std::once_flag         isExtenderReadyLock;
 
    #pragma region function hooks
-      unique_ptr<VTableHook> d3dDeviceHook             = nullptr;
+      unique_ptr<VTableHook64> d3dDeviceHook             = nullptr;
       D3D11Types::Present_t  origPresent               = nullptr;
 
       HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
@@ -542,7 +544,7 @@ namespace MirrorHookInternals {
 
       void Init() {
          infoOverlayFrame = 0;
-         d3dDeviceHook    = make_unique<VTableHook>((PDWORD64*)pSwapChain);
+         d3dDeviceHook    = make_unique<VTableHook64>((PDWORD64*)pSwapChain);
          origPresent      = d3dDeviceHook->Hook(8, hkPresent);
 
          isExtenderReady = true;
@@ -563,7 +565,7 @@ namespace MirrorHookInternals {
    }
 
 #pragma region exported helpers
-   bool __stdcall PrepareFor(MirrorHook::Game gameType) {
+   bool __stdcall PrepareFor(MirrorHook::Game gameType, const wchar_t* windowTitleName) {
    #pragma ExportedFunction
       if (!isInit && !DI8Extender::isExtenderReady && !D3D9Extender::isExtenderReady) {
          Memory::Init();
@@ -592,7 +594,7 @@ namespace MirrorHookInternals {
                   sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
                   sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
                   sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-                  sd.OutputWindow = FindWindowW(0, L"TheLongDark");
+                  sd.OutputWindow = FindWindowW(0, windowTitleName);
                   sd.SampleDesc.Count = 1;
                   sd.Windowed = ((GetWindowLongPtr(sd.OutputWindow, GWL_STYLE) & WS_POPUP) != 0) ? false : true;
                   sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;

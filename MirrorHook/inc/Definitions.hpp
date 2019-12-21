@@ -35,11 +35,11 @@ namespace MirrorHook {
       UniversalD3D11
    };
 
-   typedef bool(__stdcall* fn_PrepareFor)(Game gameType);
+   typedef bool(__stdcall* fn_PrepareFor)(Game gameType, const wchar_t* windowTitleName);
    typedef bool(__stdcall* fn_NoParam_ReturnsBool)();
 
-   inline bool __stdcall PrepareFor(Game gameType) {
-      return reinterpret_cast<fn_PrepareFor>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::PrepareFor"))(gameType);
+   inline bool __stdcall PrepareFor(Game gameType, const wchar_t* windowTitleName) {
+      return reinterpret_cast<fn_PrepareFor>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::PrepareFor"))(gameType, windowTitleName);
    }
    inline bool __stdcall IsReady() {
       return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::IsReady"))();
@@ -135,12 +135,12 @@ namespace MirrorHook {
       }
       inline ID3D11DeviceContext* __stdcall GetD3D11DeviceContext() {
          return reinterpret_cast<fnGetD3D11DeviceContext>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D11Extender::GetD3D11DeviceContext"))();
-         
+
       }
       inline bool __stdcall IsReady() {
          return reinterpret_cast<fn_NoParam_ReturnsBool>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D11Extender::IsReady"))();
       }
    }
-   
+
 }
 #endif

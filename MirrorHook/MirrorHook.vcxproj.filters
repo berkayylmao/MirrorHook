@@ -87,6 +87,12 @@
     <ClInclude Include="inc\imgui\dx11\imgui_impl_dx11.h">
       <Filter>Helpers\External\imgui\dx11</Filter>
     </ClInclude>
+    <ClInclude Include="Helpers\Memory\VTableHook64.hpp">
+      <Filter>Helpers\Internal\Memory</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers\Memory\Memory64.hpp">
+      <Filter>Helpers\Internal\Memory</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

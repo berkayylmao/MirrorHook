@@ -154,7 +154,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;MIRRORHOOK_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)inc\imgui;$(ProjectDir)inc;$(DXSDK_DIR)Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)inc\imgui;$(ProjectDir);$(DXSDK_DIR)Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
@@ -176,7 +176,9 @@
     <ClInclude Include="Helpers\Internal\D3D9\D3D9Types.h" />
     <ClInclude Include="Helpers\Internal\DI8\DI8Types.h" />
     <ClInclude Include="Helpers\Memory\Memory.h" />
+    <ClInclude Include="Helpers\Memory\Memory64.hpp" />
     <ClInclude Include="Helpers\Memory\VTableHook.hpp" />
+    <ClInclude Include="Helpers\Memory\VTableHook64.hpp" />
     <ClInclude Include="inc\Definitions.hpp" />
     <ClInclude Include="inc\imgui\dx11\imgui_impl_dx11.h" />
     <ClInclude Include="inc\imgui\dx9\imgui_impl_dx9.h" />
