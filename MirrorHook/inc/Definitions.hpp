@@ -121,6 +121,7 @@ namespace MirrorHook {
 
    #ifndef __d3d11_h__
       typedef LPVOID ID3D11Device;
+      typedef LPVOID ID3D11DeviceContext;
    #endif
       typedef HRESULT(__stdcall* fnAddExtension)(D3D11Extension extenderType, LPVOID extensionAddress);
       typedef ID3D11Device*(__stdcall* fnGetD3D11Device)();
