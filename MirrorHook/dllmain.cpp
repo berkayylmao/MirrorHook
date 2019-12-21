@@ -469,11 +469,15 @@ namespace MirrorHookInternals {
                pSwapChain->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
                pD3DDevice->GetImmediateContext(&pD3DContext);
 
+               ImGui::CreateContext();
                ImGui_ImplDX11_Init(pD3DDevice, pD3DContext);
                            }
             );
          }
          if (useImGui && isImGuiReady) {
+            ImGui_ImplDX11_NewFrame();
+            ImGui::NewFrame();
+
             ImGui::GetIO().KeysDown[VK_F9] = GetKeyState(VK_F9) & 0x8000;
             if (ImGui::IsKeyPressed(VK_F9, false)) {
                infoOverlayFrame_MaxFrame = -1;
@@ -515,7 +519,8 @@ namespace MirrorHookInternals {
                }
                ImGui::End();
                ImGui::Render();
-            }
+               ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+            }    
          }
          return origPresent(pSwapChain, SyncInterval, Flags);
       }
