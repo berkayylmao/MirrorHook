@@ -630,7 +630,7 @@ namespace MirrorHookInternals {
 
       isInit = true;
       return TRUE;
-}
+   }
 
 #pragma region exported helpers
    bool __stdcall PrepareFor(MirrorHook::Game gameType, const wchar_t* windowTitleName = nullptr) {
@@ -654,12 +654,9 @@ namespace MirrorHookInternals {
          #else
             case MirrorHook::Game::UniversalD3D11:
             {
-               if (!windowTitleName) {
-                  D3D11Extender::windowHandle = GetForegroundWindow();
-               } else {
-                  while (!(D3D11Extender::windowHandle = FindWindowW(0, windowTitleName)))
-                     Sleep(100);
-               }
+               D3D11Extender::windowHandle = (windowTitleName ? FindWindowW(0, windowTitleName) : GetForegroundWindow());
+               if (!D3D11Extender::windowHandle)
+                  return false;
 
                Memory64::Init();
                D3D_FEATURE_LEVEL levels[] ={ D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1 };
@@ -691,11 +688,11 @@ namespace MirrorHookInternals {
             }
          #endif
             break;
-      }
+         }
          CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&Init, 0, 0, 0);
          return true;
-   } else return false;
-}
+      } else return false;
+   }
    bool WINAPI IsReady() {
    #pragma ExportedFunction
       return isInit;
@@ -715,4 +712,4 @@ namespace MirrorHookInternals {
          DisableThreadLibraryCalls(hModule);
       return TRUE;
    }
-   }
+}
