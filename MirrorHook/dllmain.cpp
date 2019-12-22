@@ -487,12 +487,12 @@ namespace MirrorHookInternals {
             }
          }
 
+         ImGui::GetIO().KeysDown[VK_F9] = GetAsyncKeyState(VK_F9) & 0x8000;
+         if (ImGui::IsKeyPressed(VK_F9, false)) {
+            infoOverlayFrame_MaxFrame = -1;
+            useImGui = !useImGui;
+         }
          if (useImGui && isImGuiReady) {
-            if (ImGui::IsKeyPressed(VK_F9, false)) {
-               infoOverlayFrame_MaxFrame = -1;
-               useImGui = !useImGui;
-            }
-
             if (infoOverlayFrame_MaxFrame == -1
                 || infoOverlayFrame < infoOverlayFrame_MaxFrame) {
                ImGui_ImplDX11_NewFrame();
@@ -525,8 +525,6 @@ namespace MirrorHookInternals {
                         ImGui::End();
                         ImGui::Render();
                         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-                        useImGui = false;
-                        isImGuiReady = false;
                         return origPresent(pSwapChain_Inner, SyncInterval, Flags);
                      }
                   }
@@ -535,7 +533,6 @@ namespace MirrorHookInternals {
                ImGui::Render();
                ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
             }
-            ImGui::GetIO().KeysDown[VK_F9] = GetAsyncKeyState(VK_F9) & 0x8000;
          }
          return origPresent(pSwapChain_Inner, SyncInterval, Flags);
       }
@@ -632,7 +629,7 @@ namespace MirrorHookInternals {
 
       isInit = true;
       return TRUE;
-}
+   }
 
 #pragma region exported helpers
    bool __stdcall PrepareFor(MirrorHook::Game gameType, const wchar_t* windowTitleName = nullptr) {
@@ -658,7 +655,7 @@ namespace MirrorHookInternals {
             {
                if (!windowTitleName) {
                   D3D11Extender::windowHandle = GetForegroundWindow();
-               } else {
+            } else {
                   while (!(D3D11Extender::windowHandle = FindWindowW(0, windowTitleName)))
                      Sleep(100);
                }
@@ -690,14 +687,14 @@ namespace MirrorHookInternals {
 
                if (FAILED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, levels, sizeof(levels) / sizeof(D3D_FEATURE_LEVEL), D3D11_SDK_VERSION, &sd, &D3D11Extender::pSwapChain, &D3D11Extender::pD3DDevice, &obtainedLevel, &D3D11Extender::pD3DDeviceContext)))
                   return false;
-            }
+         }
          #endif
             break;
       }
          CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&Init, 0, 0, 0);
          return true;
    } else return false;
-   }
+}
    bool WINAPI IsReady() {
    #pragma ExportedFunction
       return isInit;
@@ -717,4 +714,4 @@ namespace MirrorHookInternals {
          DisableThreadLibraryCalls(hModule);
       return TRUE;
    }
-}
+   }
