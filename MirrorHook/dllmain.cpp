@@ -525,6 +525,7 @@ namespace MirrorHookInternals {
                         ImGui::End();
                         ImGui::Render();
                         ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+                        useImGui = false;
                         return origPresent(pSwapChain_Inner, SyncInterval, Flags);
                      }
                   }
@@ -629,7 +630,7 @@ namespace MirrorHookInternals {
 
       isInit = true;
       return TRUE;
-   }
+}
 
 #pragma region exported helpers
    bool __stdcall PrepareFor(MirrorHook::Game gameType, const wchar_t* windowTitleName = nullptr) {
@@ -655,7 +656,7 @@ namespace MirrorHookInternals {
             {
                if (!windowTitleName) {
                   D3D11Extender::windowHandle = GetForegroundWindow();
-            } else {
+               } else {
                   while (!(D3D11Extender::windowHandle = FindWindowW(0, windowTitleName)))
                      Sleep(100);
                }
@@ -687,7 +688,7 @@ namespace MirrorHookInternals {
 
                if (FAILED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, levels, sizeof(levels) / sizeof(D3D_FEATURE_LEVEL), D3D11_SDK_VERSION, &sd, &D3D11Extender::pSwapChain, &D3D11Extender::pD3DDevice, &obtainedLevel, &D3D11Extender::pD3DDeviceContext)))
                   return false;
-         }
+            }
          #endif
             break;
       }
