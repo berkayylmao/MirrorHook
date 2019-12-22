@@ -2,7 +2,7 @@
    MIT License
 
    Copyright (c) 2019 Berkay Yigit <berkay2578@gmail.com>
-      Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -44,7 +44,7 @@ public:
    Type Hook(UINT index, Type fnNew) {
       DWORD64 fnOrig = pOrigVTable[index];
       if (!hookedIndexes.count(index)) {
-         Memory64::openMemoryAccess(fnOrig, true, sizeof(DWORD64));
+         Memory64::openMemoryAccess((DWORD64)&pOrigVTable[index], true, sizeof(DWORD64));
          pOrigVTable[index] = (DWORD64)fnNew;
          Memory64::restoreMemoryAccess();
 
@@ -55,7 +55,7 @@ public:
 
    void Unhook(UINT index) {
       if (hookedIndexes.count(index)) {
-         Memory64::openMemoryAccess(pOrigVTable[index], true, sizeof(DWORD64));
+         Memory64::openMemoryAccess((DWORD64)&pOrigVTable[index], true, sizeof(DWORD64));
          DWORD64 fnOrig = hookedIndexes.at(index);
          pOrigVTable[index] = fnOrig;
          Memory64::restoreMemoryAccess();
@@ -65,7 +65,7 @@ public:
    void UnhookAll() {
       for (auto const& hook : hookedIndexes) {
          UINT index = hook.first;
-         Memory64::openMemoryAccess(pOrigVTable[index], true, sizeof(DWORD64));
+         Memory64::openMemoryAccess((DWORD64)&pOrigVTable[index], true, sizeof(DWORD64));
          pOrigVTable[index] = hook.second;
          Memory64::restoreMemoryAccess();
       }

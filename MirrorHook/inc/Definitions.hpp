@@ -2,7 +2,7 @@
    MIT License
 
    Copyright (c) 2019 Berkay Yigit <berkay2578@gmail.com>
-      Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ namespace MirrorHook {
    typedef bool(__stdcall* fn_PrepareFor)(Game gameType, const wchar_t* windowTitleName);
    typedef bool(__stdcall* fn_NoParam_ReturnsBool)();
 
-   inline bool __stdcall PrepareFor(Game gameType, const wchar_t* windowTitleName) {
+   inline bool __stdcall PrepareFor(Game gameType, const wchar_t* windowTitleName = nullptr) {
       return reinterpret_cast<fn_PrepareFor>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::PrepareFor"))(gameType, windowTitleName);
    }
    inline bool __stdcall IsReady() {
@@ -124,12 +124,16 @@ namespace MirrorHook {
       typedef LPVOID ID3D11DeviceContext;
    #endif
       typedef HRESULT(__stdcall* fnAddExtension)(D3D11Extension extenderType, LPVOID extensionAddress);
+      typedef HWND(__stdcall* fnGetWindowHandle)();
       typedef ID3D11Device*(__stdcall* fnGetD3D11Device)();
       typedef ID3D11DeviceContext*(__stdcall* fnGetD3D11DeviceContext)();
 
       inline HRESULT __stdcall AddExtension(D3D11Extension extensionType, LPVOID extensionAddress) {
          return reinterpret_cast<fnAddExtension>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::AddExtension"))
             (extensionType, extensionAddress);
+      }
+      inline HWND __stdcall GetWindowHandle() {
+         return reinterpret_cast<fnGetWindowHandle>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::GetWindowHandle"))();
       }
       inline ID3D11Device* __stdcall GetD3D9Device() {
          return reinterpret_cast<fnGetD3D11Device>(GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::GetD3D11Device"))();

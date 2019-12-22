@@ -34,6 +34,9 @@
     <Filter Include="Helpers\External\imgui\dx11">
       <UniqueIdentifier>{f7835192-3569-47e1-89b1-0e34a54cd37c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Helpers\External\imgui\win32">
+      <UniqueIdentifier>{20bf0232-3868-4500-a91e-9afe9d74cbb2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -90,6 +93,9 @@
     <ClInclude Include="Helpers\Memory\Memory64.hpp">
       <Filter>Helpers\Internal\Memory</Filter>
     </ClInclude>
+    <ClInclude Include="inc\imgui\win32\imgui_impl_win32.h">
+      <Filter>Helpers\External\imgui\win32</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -114,6 +120,9 @@
       <Filter>Helpers\External\imgui\dx11</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="inc\imgui\win32\imgui_impl_win32.cpp">
+      <Filter>Helpers\External\imgui\win32</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="MirrorHook.licenseheader" />

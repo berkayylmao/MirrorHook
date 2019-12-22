@@ -2,7 +2,7 @@
    MIT License
 
    Copyright (c) 2019 Berkay Yigit <berkay2578@gmail.com>
-      Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -42,6 +42,7 @@
 #endif
 
 #include "imgui.h"
+#include "win32/imgui_impl_win32.h"
 
 #include "inc/Definitions.hpp"
 #ifndef D3D11_Build
@@ -438,47 +439,53 @@ namespace MirrorHookInternals {
    }
 #else
    namespace D3D11Extender {
-      ID3D11Device*          pD3DDevice                = nullptr;
-      ID3D11DeviceContext*   pD3DContext               = nullptr;
-      IDXGISwapChain*        pSwapChain                = nullptr;
+      HWND                    windowHandle              = nullptr;
+      ID3D11Device*           pD3DDevice                = nullptr;
+      ID3D11DeviceContext*    pD3DDeviceContext         = nullptr;
+      IDXGISwapChain*         pSwapChain                = nullptr; // used for hooking, data invalid after hook is ready
+      ID3D11RenderTargetView* pRenderTargetView         = nullptr;
 
-      auto                   vPresentExtensions        = vector<D3D11Types::Present_t>();
+      auto                    vPresentExtensions        = vector<D3D11Types::Present_t>();
 
-      bool                   useImGui                  = true;
-      bool                   isImGuiReady              = false;
-      unsigned int           infoOverlayFrame          = 301;
-      unsigned int           infoOverlayFrame_MaxFrame = 300;
+      bool                    useImGui                  = true;
+      bool                    isImGuiReady              = false;
+      unsigned int            infoOverlayFrame          = 301;
+      unsigned int            infoOverlayFrame_MaxFrame = 300;
 
-      bool                   isExtenderReady           = false;
-      std::once_flag         isExtenderReadyLock;
+      bool                    isExtenderReady           = false;
+      static std::once_flag   isExtenderReadyLock;
 
    #pragma region function hooks
-      unique_ptr<VTableHook64> d3dDeviceHook             = nullptr;
-      D3D11Types::Present_t  origPresent               = nullptr;
+      unique_ptr<VTableHook64> d3dDeviceHook            = nullptr;
+      D3D11Types::Present_t    origPresent              = nullptr;
 
-      HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
+      HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain_Inner, UINT SyncInterval, UINT Flags) {
          if (!vPresentExtensions.empty()) {
             for (auto& presentExtension : vPresentExtensions) {
                if (presentExtension)
-                  presentExtension(pSwapChain, SyncInterval, Flags);
+                  presentExtension(pSwapChain_Inner, SyncInterval, Flags);
             }
          }
 
          if (useImGui && !isImGuiReady) {
             std::call_once(isExtenderReadyLock, [&]() {
-               pSwapChain->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
-               pD3DDevice->GetImmediateContext(&pD3DContext);
+               pSwapChain_Inner->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
+               pD3DDevice->GetImmediateContext(&pD3DDeviceContext);
+
+               ID3D11Texture2D* renderTargetTexture = nullptr;
+               if (SUCCEEDED(pSwapChain_Inner->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(&renderTargetTexture)))) {
+                  pD3DDevice->CreateRenderTargetView(renderTargetTexture, NULL, &pRenderTargetView);
+                  renderTargetTexture->Release();
+               }
 
                ImGui::CreateContext();
-               ImGui_ImplDX11_Init(pD3DDevice, pD3DContext);
+               ImGui_ImplDX11_Init(pD3DDevice, pD3DDeviceContext);
+               ImGui_ImplWin32_Init(windowHandle);
+               isImGuiReady = true;
                            }
             );
          }
          if (useImGui && isImGuiReady) {
-            ImGui_ImplDX11_NewFrame();
-            ImGui::NewFrame();
-
-            ImGui::GetIO().KeysDown[VK_F9] = GetKeyState(VK_F9) & 0x8000;
             if (ImGui::IsKeyPressed(VK_F9, false)) {
                infoOverlayFrame_MaxFrame = -1;
                useImGui = !useImGui;
@@ -486,6 +493,11 @@ namespace MirrorHookInternals {
 
             if (infoOverlayFrame_MaxFrame == -1
                 || infoOverlayFrame < infoOverlayFrame_MaxFrame) {
+               pD3DDeviceContext->OMSetRenderTargets(1, &pRenderTargetView, NULL);
+               ImGui_ImplDX11_NewFrame();
+               ImGui_ImplWin32_NewFrame();
+               ImGui::NewFrame();
+
                ImGui::SetNextWindowPos(ImVec2(10.0f, 40.0f), ImGuiCond_Once);
                if (ImGui::Begin("##MirrorHook", nullptr,
                                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize)) {
@@ -511,19 +523,22 @@ namespace MirrorHookInternals {
                      if (infoOverlayFrame >= infoOverlayFrame_MaxFrame) {
                         ImGui::End();
                         ImGui::Render();
+                        ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
                         useImGui = false;
                         isImGuiReady = false;
-                        return origPresent(pSwapChain, SyncInterval, Flags);
+                        return origPresent(pSwapChain_Inner, SyncInterval, Flags);
                      }
                   }
                }
                ImGui::End();
                ImGui::Render();
                ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-            }    
+            }
+            ImGui::GetIO().KeysDown[VK_F9] = GetAsyncKeyState(VK_F9) & 0x8000;
          }
-         return origPresent(pSwapChain, SyncInterval, Flags);
+         return origPresent(pSwapChain_Inner, SyncInterval, Flags);
       }
+
    #pragma endregion
 
    #pragma region exported helpers
@@ -538,6 +553,10 @@ namespace MirrorHookInternals {
          }
          return TRUE;
       }
+      HWND __stdcall GetWindowHandle() {
+      #pragma ExportedFunction
+         return windowHandle;
+      }
       ID3D11Device* __stdcall GetD3D11Device() {
       #pragma ExportedFunction
          if (isExtenderReady)
@@ -550,19 +569,49 @@ namespace MirrorHookInternals {
          if (isExtenderReady)
             return nullptr;
 
-         return pD3DContext;
+         return pD3DDeviceContext;
       }
+
       bool __stdcall IsReady() {
       #pragma ExportedFunction
          return isExtenderReady;
       }
    #pragma endregion
 
+      DWORD64 getRealSwapChain() {
+         MEMORY_BASIC_INFORMATION64 mbi ={ 0 };
+         DWORD64 addrVtbl;
+         for (DWORD64 memptr = 0x10000; memptr < 0x7FFFFFFEFFFF; memptr = mbi.BaseAddress + mbi.RegionSize) {
+            if (!VirtualQuery(reinterpret_cast<LPCVOID>(memptr), reinterpret_cast<PMEMORY_BASIC_INFORMATION>(&mbi), sizeof(MEMORY_BASIC_INFORMATION)))
+               continue;
+            if (mbi.State != MEM_COMMIT || mbi.Protect == PAGE_NOACCESS || mbi.Protect & PAGE_GUARD)
+               continue;
+
+            DWORD64 len = mbi.BaseAddress + mbi.RegionSize;
+            for (DWORD64 current = mbi.BaseAddress; current < len; current++) {
+               __try {
+                  if (current == (DWORD64)pSwapChain)
+                     continue;
+
+                  if (*(DWORD64*)current == *(DWORD64*)pSwapChain)
+                     return current;
+               } __except (EXCEPTION_EXECUTE_HANDLER) {
+                  continue;
+               }
+            }
+         }
+
+         return NULL;
+      }
       void Init() {
          infoOverlayFrame = 0;
-         d3dDeviceHook    = make_unique<VTableHook64>((PDWORD64*)pSwapChain);
-         origPresent      = d3dDeviceHook->Hook(8, hkPresent);
 
+         d3dDeviceHook = make_unique<VTableHook64>((PDWORD64*)getRealSwapChain());
+         origPresent   = d3dDeviceHook->Hook(8, hkPresent);
+
+         pSwapChain->Release();
+         pD3DDevice->Release();
+         pD3DDeviceContext->Release();
          isExtenderReady = true;
       }
    }
@@ -585,7 +634,7 @@ namespace MirrorHookInternals {
    }
 
 #pragma region exported helpers
-   bool __stdcall PrepareFor(MirrorHook::Game gameType, const wchar_t* windowTitleName) {
+   bool __stdcall PrepareFor(MirrorHook::Game gameType, const wchar_t* windowTitleName = nullptr) {
    #pragma ExportedFunction
       if (!isInit) {
          switch (gameType) {
@@ -602,10 +651,17 @@ namespace MirrorHookInternals {
                Memory::Init();
                DI8Extender::dinput8Address    = Memory::makeAbsolute(0x71F5CC);
                D3D9Extender::d3dDeviceAddress = Memory::makeAbsolute(0x6B0ABC);
-         }
+            }
          #else
             case MirrorHook::Game::UniversalD3D11:
             {
+               if (!windowTitleName) {
+                  D3D11Extender::windowHandle = GetForegroundWindow();
+               } else {
+                  while (!(D3D11Extender::windowHandle = FindWindowW(0, windowTitleName)))
+                     Sleep(100);
+               }
+
                Memory64::Init();
                D3D_FEATURE_LEVEL levels[] ={ D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1 };
                D3D_FEATURE_LEVEL obtainedLevel;
@@ -618,9 +674,9 @@ namespace MirrorHookInternals {
                   sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
                   sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
                   sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-                  sd.OutputWindow = FindWindowW(0, windowTitleName);
+                  sd.OutputWindow = D3D11Extender::windowHandle;
                   sd.SampleDesc.Count = 1;
-                  sd.Windowed = ((GetWindowLongPtr(sd.OutputWindow, GWL_STYLE) & WS_POPUP) != 0) ? false : true;
+                  sd.Windowed = ((GetWindowLongPtr(D3D11Extender::windowHandle, GWL_STYLE) & WS_POPUP) != 0) ? false : true;
                   sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
                   sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
                   sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
@@ -631,19 +687,16 @@ namespace MirrorHookInternals {
                   sd.BufferDesc.RefreshRate.Denominator = 1;
                }
 
-               HRESULT hr = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, levels, sizeof(levels) / sizeof(D3D_FEATURE_LEVEL), D3D11_SDK_VERSION, &sd, &D3D11Extender::pSwapChain, &D3D11Extender::pD3DDevice, &obtainedLevel, &D3D11Extender::pD3DContext);
-               if (FAILED(hr)) {
-                  printf("Failed to create device and swapchain.");
+               if (FAILED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, levels, sizeof(levels) / sizeof(D3D_FEATURE_LEVEL), D3D11_SDK_VERSION, &sd, &D3D11Extender::pSwapChain, &D3D11Extender::pD3DDevice, &obtainedLevel, &D3D11Extender::pD3DDeviceContext)))
                   return false;
-               }
             }
          #endif
             break;
-      }
+         }
          CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&Init, 0, 0, 0);
          return true;
-   } else return false;
-}
+      } else return false;
+   }
    bool WINAPI IsReady() {
    #pragma ExportedFunction
       return isInit;
