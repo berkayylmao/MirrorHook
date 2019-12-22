@@ -487,11 +487,6 @@ namespace MirrorHookInternals {
             }
          }
 
-         ImGui::GetIO().KeysDown[VK_F9] = GetAsyncKeyState(VK_F9) & 0x8000;
-         if (ImGui::IsKeyPressed(VK_F9, false)) {
-            infoOverlayFrame_MaxFrame = -1;
-            useImGui = !useImGui;
-         }
          if (useImGui && isImGuiReady) {
             if (infoOverlayFrame_MaxFrame == -1
                 || infoOverlayFrame < infoOverlayFrame_MaxFrame) {
@@ -514,10 +509,9 @@ namespace MirrorHookInternals {
                      ImGui::Text("Present extensions: %d", vPresentExtensions.size());
                   }
                   ImGui::Unindent(5.0f);
-                  ImGui::Separator();
-                  ImGui::Text("Press F9 to toggle me.");
 
                   if (infoOverlayFrame_MaxFrame != -1) {
+                     ImGui::Separator();
                      ImGui::Text("I will disappear in... %04u.", infoOverlayFrame_MaxFrame - infoOverlayFrame);
 
                      infoOverlayFrame++;
