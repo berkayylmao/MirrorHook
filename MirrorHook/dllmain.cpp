@@ -460,13 +460,6 @@ namespace MirrorHookInternals {
       D3D11Types::Present_t    origPresent              = nullptr;
 
       HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain_Inner, UINT SyncInterval, UINT Flags) {
-         if (!vPresentExtensions.empty()) {
-            for (auto& presentExtension : vPresentExtensions) {
-               if (presentExtension)
-                  presentExtension(pSwapChain_Inner, SyncInterval, Flags);
-            }
-         }
-
          if (useImGui && !isImGuiReady) {
             std::call_once(isExtenderReadyLock, [&]() {
                pSwapChain_Inner->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
@@ -485,6 +478,15 @@ namespace MirrorHookInternals {
                            }
             );
          }
+
+         pD3DDeviceContext->OMSetRenderTargets(1, &pRenderTargetView, NULL);
+         if (!vPresentExtensions.empty()) {
+            for (auto& presentExtension : vPresentExtensions) {
+               if (presentExtension)
+                  presentExtension(pSwapChain_Inner, SyncInterval, Flags);
+            }
+         }
+
          if (useImGui && isImGuiReady) {
             if (ImGui::IsKeyPressed(VK_F9, false)) {
                infoOverlayFrame_MaxFrame = -1;
@@ -493,7 +495,6 @@ namespace MirrorHookInternals {
 
             if (infoOverlayFrame_MaxFrame == -1
                 || infoOverlayFrame < infoOverlayFrame_MaxFrame) {
-               pD3DDeviceContext->OMSetRenderTargets(1, &pRenderTargetView, NULL);
                ImGui_ImplDX11_NewFrame();
                ImGui_ImplWin32_NewFrame();
                ImGui::NewFrame();
@@ -502,7 +503,7 @@ namespace MirrorHookInternals {
                if (ImGui::Begin("##MirrorHook", nullptr,
                                 ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_AlwaysAutoResize)) {
 
-                  ImGui::Text("MirrorHook v1.1");
+                  ImGui::Text("MirrorHook v2.0");
                   ImGui::Text("https://github.com/berkayylmao/MirrorHook");
                   ImGui::Text("by berkayylmao");
                   ImGui::Separator();
@@ -631,7 +632,7 @@ namespace MirrorHookInternals {
 
       isInit = true;
       return TRUE;
-   }
+}
 
 #pragma region exported helpers
    bool __stdcall PrepareFor(MirrorHook::Game gameType, const wchar_t* windowTitleName = nullptr) {
@@ -692,10 +693,10 @@ namespace MirrorHookInternals {
             }
          #endif
             break;
-         }
+      }
          CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&Init, 0, 0, 0);
          return true;
-      } else return false;
+   } else return false;
    }
    bool WINAPI IsReady() {
    #pragma ExportedFunction

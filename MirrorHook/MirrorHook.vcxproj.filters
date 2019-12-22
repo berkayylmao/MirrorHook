@@ -42,9 +42,6 @@
     <ClInclude Include="stdafx.h">
       <Filter>default</Filter>
     </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>default</Filter>
-    </ClInclude>
     <ClInclude Include="inc\Definitions.hpp">
       <Filter>Helpers\External</Filter>
     </ClInclude>

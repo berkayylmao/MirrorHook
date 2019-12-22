@@ -24,12 +24,12 @@
 */
 
 #pragma once
-
-#include "targetver.h"
-
+#include <WinSDKVer.h>
+#define _WIN32_WINNT _WIN32_WINNT_WIN7
+#include <SDKDDKVer.h>
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
 //
-#define D3D11_Build
+#define D3D11_Build // must be x64; D3D9 build must be x86
 #define ExportedFunction comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
