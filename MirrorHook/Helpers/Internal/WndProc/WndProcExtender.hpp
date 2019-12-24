@@ -32,11 +32,6 @@ namespace MirrorHookInternals {
       WNDPROC origWndProc  = nullptr;
       auto    extensions   = std::vector<WNDPROC>();
 
-      void addExtension(LPVOID extensionAddress) {
-      #pragma ExportedFunction
-         extensions.push_back(reinterpret_cast<WNDPROC>(extensionAddress));
-      }
-
       LRESULT CALLBACK hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
          if (!extensions.empty()) {
             static LRESULT stickyRetVal = MirrorHook::WndProc::WndProcHook_NoReturn;
@@ -52,6 +47,11 @@ namespace MirrorHookInternals {
             }
          }
          return CallWindowProc(origWndProc, hWnd, uMsg, wParam, lParam);
+      }
+
+      void AddExtension(LPVOID extensionAddress) {
+      #pragma ExportedFunction
+         extensions.push_back(reinterpret_cast<WNDPROC>(extensionAddress));
       }
 
       void Init(HWND* pWindowHandle) {
