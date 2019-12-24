@@ -23,52 +23,28 @@
    SOFTWARE.
 */
 
+// dear imgui: Renderer for DirectX11
+// This needs to be used along with a Platform Binding (e.g. Win32)
+
+// Implemented features:
+//  [X] Renderer: User texture binding. Use 'ID3D11ShaderResourceView*' as ImTextureID. Read the FAQ about ImTextureID!
+//  [X] Renderer: Support for large meshes (64k+ vertices) with 16-bit indices.
+
+// You can copy and use unmodified imgui_impl_* files in your project. See main.cpp for an example of using this.
+// If you are new to dear imgui, read examples/README.txt and read the documentation at the top of imgui.cpp.
+// https://github.com/ocornut/imgui
+
 #pragma once
-#include "stdafx.h"
-#include "Memory.h"
-#include <map>
 
-class VTableHook {
-   VTableHook(const VTableHook&) = delete;
+struct ID3D11Device;
+struct ID3D11DeviceContext;
+namespace ImGui_ImplDX11 {
+   IMGUI_IMPL_API bool     Init(ID3D11Device* device, ID3D11DeviceContext* device_context);
+   IMGUI_IMPL_API void     Shutdown();
+   IMGUI_IMPL_API void     NewFrame();
+   IMGUI_IMPL_API void     RenderDrawData(ImDrawData* draw_data);
 
-private:
-   DWORD* pOrigVTable;
-   std::map<UINT, DWORD> hookedIndexes;
-
-public:
-   VTableHook(PDWORD* ppClass) {
-      pOrigVTable = *ppClass;
-   }
-
-   template<class Type>
-   Type Hook(UINT index, Type fnNew) {
-      DWORD fnOrig = pOrigVTable[index];
-      if (!hookedIndexes.count(index)) {
-         Memory::openMemoryAccess(fnOrig, 4);
-         pOrigVTable[index] = (DWORD)fnNew;
-         Memory::restoreMemoryAccess();
-
-         hookedIndexes.insert(std::make_pair(index, fnOrig));
-      }
-      return (Type)fnOrig;
-   }
-
-   void Unhook(UINT index) {
-      if (hookedIndexes.count(index)) {
-         Memory::openMemoryAccess(pOrigVTable[index], 4);
-         DWORD fnOrig = hookedIndexes.at(index);
-         pOrigVTable[index] = fnOrig;
-         Memory::restoreMemoryAccess();
-         hookedIndexes.erase(index);
-      }
-   }
-   void UnhookAll() {
-      for (auto const& hook : hookedIndexes) {
-         UINT index = hook.first;
-         Memory::openMemoryAccess(pOrigVTable[index], 4);
-         pOrigVTable[index] = hook.second;
-         Memory::restoreMemoryAccess();
-      }
-      hookedIndexes.clear();
-   }
-};
+   // Use if you want to reset your rendering device without losing ImGui state.
+   IMGUI_IMPL_API void     InvalidateDeviceObjects();
+   IMGUI_IMPL_API bool     CreateDeviceObjects();
+}

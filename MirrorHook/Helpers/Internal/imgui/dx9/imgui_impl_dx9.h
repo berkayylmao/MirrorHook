@@ -23,31 +23,27 @@
    SOFTWARE.
 */
 
-#include "stdafx.h"
-#include "Memory.h"
+// dear imgui: Renderer for DirectX9
+// This needs to be used along with a Platform Binding (e.g. Win32)
 
-namespace Memory {
-   DWORD oldMemoryAccess;
-   DWORD memoryAccessAddress;
-   int memoryAccessSize;
-   DWORD baseAddress = 0;
+// Implemented features:
+//  [X] Renderer: User texture binding. Use 'LPDIRECT3DTEXTURE9' as ImTextureID. Read the FAQ about ImTextureID!
+//  [X] Renderer: Support for large meshes (64k+ vertices) with 16-bit indices.
 
-   void openMemoryAccess(const DWORD& address, const int& size) {
-      memoryAccessAddress = address;
-      memoryAccessSize = size;
-      VirtualProtect((LPVOID)address, size, PAGE_EXECUTE_READWRITE, &oldMemoryAccess);
-   }
-   void restoreMemoryAccess() {
-      VirtualProtect((LPVOID)memoryAccessAddress, memoryAccessSize, oldMemoryAccess, &oldMemoryAccess);
-      memoryAccessAddress = 0;
-      memoryAccessSize = 0;
-   }
+// You can copy and use unmodified imgui_impl_* files in your project. See main.cpp for an example of using this.
+// If you are new to dear imgui, read examples/README.txt and read the documentation at the top of imgui.cpp.
+// https://github.com/ocornut/imgui
 
-   DWORD makeAbsolute(const DWORD& relativeAddress) {
-      return baseAddress + relativeAddress;
-   }
+#pragma once
 
-   void Init() {
-      baseAddress = (DWORD)GetModuleHandle(0);
-   }
+struct IDirect3DDevice9;
+namespace ImGui_ImplDX9 {
+   IMGUI_IMPL_API bool     Init(IDirect3DDevice9* device);
+   IMGUI_IMPL_API void     Shutdown();
+   IMGUI_IMPL_API void     NewFrame();
+   IMGUI_IMPL_API void     RenderDrawData(ImDrawData* draw_data);
+
+   // Use if you want to reset your rendering device without losing ImGui state.
+   IMGUI_IMPL_API bool     CreateDeviceObjects();
+   IMGUI_IMPL_API void     InvalidateDeviceObjects();
 }

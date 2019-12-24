@@ -25,7 +25,9 @@
 
 #pragma once
 #include "stdafx.h"
+#pragma warning(push, 0)
 #include <d3d11.h>
+#pragma warning(pop)
 
 namespace D3D11Types {
    typedef HRESULT(__stdcall* Present_t)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);

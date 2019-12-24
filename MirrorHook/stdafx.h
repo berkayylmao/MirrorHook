@@ -24,12 +24,19 @@
 */
 
 #pragma once
+#pragma warning(push, 0)
 #include <WinSDKVer.h>
 #define _WIN32_WINNT _WIN32_WINNT_WIN7
 #include <SDKDDKVer.h>
 #define WIN32_LEAN_AND_MEAN
-#include <windows.h>
+#include <Windows.h>
 
+#include <map>
+#include <vector>
+#include <mutex>  // std::call_once, std::once_flag
+#include <memory> // std::unique_ptr, std::make_unique
+#pragma warning(pop)
 //
-#define D3D11_Build // must be x64; D3D9 build must be x86
 #define ExportedFunction comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+
+constexpr const char* MirrorHookVersionInfo = "MirrorHook v2.1";

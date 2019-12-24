@@ -25,28 +25,27 @@
 
 #pragma once
 #include "stdafx.h"
-#include "Memory64.hpp"
-#include <map>
+#include "Memory.hpp"
 
-class VTableHook64 {
-   VTableHook64(const VTableHook64&) = delete;
+class VTableHook {
+   VTableHook(const VTableHook&) = delete;
 
 private:
-   DWORD64* pOrigVTable;
-   std::map<UINT, DWORD64> hookedIndexes;
+   DWORD_PTR* pOrigVTable;
+   std::map<UINT, DWORD_PTR> hookedIndexes;
 
 public:
-   VTableHook64(PDWORD64* ppClass) {
+   VTableHook(PDWORD_PTR* ppClass) {
       pOrigVTable = *ppClass;
    }
 
    template<class Type>
    Type Hook(UINT index, Type fnNew) {
-      DWORD64 fnOrig = pOrigVTable[index];
+      DWORD_PTR fnOrig = pOrigVTable[index];
       if (!hookedIndexes.count(index)) {
-         Memory64::openMemoryAccess((DWORD64)&pOrigVTable[index], true, sizeof(DWORD64));
-         pOrigVTable[index] = (DWORD64)fnNew;
-         Memory64::restoreMemoryAccess();
+         Memory::openMemoryAccess((DWORD_PTR)&pOrigVTable[index], true, sizeof(DWORD_PTR));
+         pOrigVTable[index] = (DWORD_PTR)fnNew;
+         Memory::restoreMemoryAccess();
 
          hookedIndexes.insert(std::make_pair(index, fnOrig));
       }
@@ -55,19 +54,19 @@ public:
 
    void Unhook(UINT index) {
       if (hookedIndexes.count(index)) {
-         Memory64::openMemoryAccess((DWORD64)&pOrigVTable[index], true, sizeof(DWORD64));
-         DWORD64 fnOrig = hookedIndexes.at(index);
+         Memory::openMemoryAccess((DWORD_PTR)&pOrigVTable[index], true, sizeof(DWORD_PTR));
+         DWORD_PTR fnOrig = hookedIndexes.at(index);
          pOrigVTable[index] = fnOrig;
-         Memory64::restoreMemoryAccess();
+         Memory::restoreMemoryAccess();
          hookedIndexes.erase(index);
       }
    }
    void UnhookAll() {
       for (auto const& hook : hookedIndexes) {
          UINT index = hook.first;
-         Memory64::openMemoryAccess((DWORD64)&pOrigVTable[index], true, sizeof(DWORD64));
+         Memory::openMemoryAccess((DWORD_PTR)&pOrigVTable[index], true, sizeof(DWORD_PTR));
          pOrigVTable[index] = hook.second;
-         Memory64::restoreMemoryAccess();
+         Memory::restoreMemoryAccess();
       }
       hookedIndexes.clear();
    }
