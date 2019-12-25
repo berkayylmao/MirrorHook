@@ -42,6 +42,7 @@ namespace MirrorHookInternals {
       HWND                    windowHandle              = nullptr;
       ID3D11Device*           pD3DDevice                = nullptr;
       ID3D11DeviceContext*    pD3DDeviceContext         = nullptr;
+      ID3D11RenderTargetView* pRenderTargetView         = nullptr;
 
       auto                    vPresentExtensions        = std::vector<D3D11Types::Present_t>();
 
@@ -55,13 +56,20 @@ namespace MirrorHookInternals {
 
    #pragma region function hooks
       std::unique_ptr<VTableHook> dxgiSwapChainHook          = nullptr;
-      D3D11Types::Present_t         origPresent              = nullptr;
+      D3D11Types::Present_t       origPresent                = nullptr;
 
       HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
          if (useImGui && !isImGuiReady) {
             std::call_once(isExtenderReadyLock, [&]() {
                pSwapChain->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
                pD3DDevice->GetImmediateContext(&pD3DDeviceContext);
+
+               // Remove these if they cause issues
+               ID3D11Texture2D* renderTargetTexture = nullptr;
+               if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), reinterpret_cast<LPVOID*>(&renderTargetTexture)))) {
+                  pD3DDevice->CreateRenderTargetView(renderTargetTexture, NULL, &pRenderTargetView);
+                  renderTargetTexture->Release();
+               }
 
                ImGui::CreateContext();
                ImGui_ImplDX11::Init(pD3DDevice, pD3DDeviceContext);
@@ -71,6 +79,7 @@ namespace MirrorHookInternals {
             );
          }
 
+         pD3DDeviceContext->OMSetRenderTargets(1, &pRenderTargetView, NULL);
          if (!vPresentExtensions.empty()) {
             for (auto& presentExtension : vPresentExtensions) {
                if (presentExtension)
@@ -162,7 +171,7 @@ namespace MirrorHookInternals {
          return isExtenderReady;
       }
    #pragma endregion
-      
+
       bool Init(HWND* pWindowHandle) {
          infoOverlayFrame = 0;
          windowHandle     = *pWindowHandle;
