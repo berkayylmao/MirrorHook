@@ -57,10 +57,10 @@ namespace MirrorHookInternals {
       std::unique_ptr<VTableHook> dxgiSwapChainHook          = nullptr;
       D3D11Types::Present_t         origPresent              = nullptr;
 
-      HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain_Inner, UINT SyncInterval, UINT Flags) {
+      HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
          if (useImGui && !isImGuiReady) {
             std::call_once(isExtenderReadyLock, [&]() {
-               pSwapChain_Inner->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
+               pSwapChain->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
                pD3DDevice->GetImmediateContext(&pD3DDeviceContext);
 
                ImGui::CreateContext();
@@ -74,7 +74,7 @@ namespace MirrorHookInternals {
          if (!vPresentExtensions.empty()) {
             for (auto& presentExtension : vPresentExtensions) {
                if (presentExtension)
-                  presentExtension(pSwapChain_Inner, SyncInterval, Flags);
+                  presentExtension(pSwapChain, SyncInterval, Flags);
             }
          }
 
@@ -111,7 +111,7 @@ namespace MirrorHookInternals {
                         ImGui::Render();
                         ImGui_ImplDX11::RenderDrawData(ImGui::GetDrawData());
                         useImGui = false;
-                        return origPresent(pSwapChain_Inner, SyncInterval, Flags);
+                        return origPresent(pSwapChain, SyncInterval, Flags);
                      }
                   }
                }
@@ -120,7 +120,7 @@ namespace MirrorHookInternals {
                ImGui_ImplDX11::RenderDrawData(ImGui::GetDrawData());
             }
          }
-         return origPresent(pSwapChain_Inner, SyncInterval, Flags);
+         return origPresent(pSwapChain, SyncInterval, Flags);
       }
    #pragma endregion
 
@@ -162,33 +162,7 @@ namespace MirrorHookInternals {
          return isExtenderReady;
       }
    #pragma endregion
-
-      DWORD64 getRealSwapChainAddress(DWORD_PTR vtblSwapChain) {
-      #ifdef _WIN64
-         MEMORY_BASIC_INFORMATION64 mbi ={ 0 };
-      #else
-         MEMORY_BASIC_INFORMATION32 mbi ={ 0 };
-      #endif
-         DWORD_PTR addrVtbl;
-         for (DWORD_PTR memptr = 0x10000; memptr < 0x7FFFFFFEFFFF; memptr = mbi.BaseAddress + mbi.RegionSize) {
-            if (!VirtualQuery(reinterpret_cast<LPCVOID>(memptr), reinterpret_cast<PMEMORY_BASIC_INFORMATION>(&mbi), sizeof(mbi)))
-               continue;
-            if (mbi.State != MEM_COMMIT || mbi.Protect == PAGE_NOACCESS || mbi.Protect & PAGE_GUARD)
-               continue;
-
-            DWORD_PTR len = mbi.BaseAddress + mbi.RegionSize;
-            for (DWORD_PTR current = mbi.BaseAddress; current < len; current++) {
-               __try {
-                  if (*(DWORD_PTR*)current == vtblSwapChain)
-                     return current;
-               } __except (EXCEPTION_EXECUTE_HANDLER) {
-                  continue;
-               }
-            }
-         }
-
-         return NULL;
-      }
+      
       bool Init(HWND* pWindowHandle) {
          infoOverlayFrame = 0;
          windowHandle     = *pWindowHandle;
@@ -201,34 +175,20 @@ namespace MirrorHookInternals {
             ZeroMemory(&sd, sizeof(sd));
             sd.BufferCount = 1;
             sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-            sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-            sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
             sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-            sd.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
             sd.OutputWindow = windowHandle;
             sd.SampleDesc.Count = 1;
             sd.Windowed = ((GetWindowLongPtrA(windowHandle, GWL_STYLE) & WS_POPUP) != 0) ? false : true;;
             sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
             sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
             sd.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
-
-            sd.BufferDesc.Width = 1;
-            sd.BufferDesc.Height = 1;
-            sd.BufferDesc.RefreshRate.Numerator = 0;
-            sd.BufferDesc.RefreshRate.Denominator = 1;
          }
 
          IDXGISwapChain* pFakeSwapChain;
          if (FAILED(D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, levels, sizeof(levels) / sizeof(D3D_FEATURE_LEVEL), D3D11_SDK_VERSION, &sd, &pFakeSwapChain, &pD3DDevice, &obtainedLevel, &pD3DDeviceContext)))
             return false;
 
-         DWORD_PTR vtblSwapChain = *(DWORD_PTR*)pFakeSwapChain;
-         pD3DDevice->Release();
-         pD3DDeviceContext->Release();
-         pFakeSwapChain->Release();
-         pFakeSwapChain = nullptr;
-
-         dxgiSwapChainHook = std::make_unique<VTableHook>((PDWORD_PTR*)getRealSwapChainAddress(vtblSwapChain));
+         dxgiSwapChainHook = std::make_unique<VTableHook>((PDWORD_PTR*)pFakeSwapChain);
          origPresent       = dxgiSwapChainHook->Hook(8, hkPresent);
 
          WndProcExtender::Init(pWindowHandle);
