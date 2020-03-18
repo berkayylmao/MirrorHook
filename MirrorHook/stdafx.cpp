@@ -1,7 +1,7 @@
 /*
-   MIT License
-
-   Copyright (c) 2019 Berkay Yigit <berkay2578@gmail.com>
+   The MIT License (MIT)
+   
+   Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
        Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy

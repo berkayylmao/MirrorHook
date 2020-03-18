@@ -1,7 +1,7 @@
 /*
-   MIT License
+   The MIT License (MIT)
 
-   Copyright (c) 2019 Berkay Yigit <berkay2578@gmail.com>
+   Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
        Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -33,10 +33,10 @@
 
 #include <map>
 #include <vector>
-#include <mutex>  // std::call_once, std::once_flag
+#include <mutex>  // std::mutex, std::call_once, std::once_flag
 #include <memory> // std::unique_ptr, std::make_unique
 #pragma warning(pop)
-//
-#define ExportedFunction comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
 
-constexpr const char* MirrorHookVersionInfo = "MirrorHook v2.1";
+#include "../inc/Definitions.hpp"
+constexpr const char* MirrorHookVersionInfo = "MirrorHook v2.2";
+#define ExportedFunction comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)

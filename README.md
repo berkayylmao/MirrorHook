@@ -1,39 +1,47 @@
 # MirrorHook
-A wrapper for extending the existing D3D9 and DI8 implementation in some NFS games.
+A wrapper for using the existing D3D9 and D3D11+ implementations in software. In addition, after setting up MirrorHook, it will expose the window's `WndProc` via `MirrorHook::WndProc::*`.
 
-### D3D9
-After it is injected, it waits for the game to create its D3D9 device and then it hooks the following function(s):
-- BeginScene
-- EndScene
-- Reset
-- TestCooperativeLevel
-- BeginStateBlock (to ensure hook stays running)
+After MirrorHook is injected, there are 2 ways to utilize it:
+1. Prepare MirrorHook manually by calling one of the `MirrorHook::PrepareFor(\*)` functions.
+2. Wait for MirrorHook to detect the underlying DX implementation (takes maximum of 5 seconds), call `MirrorHook::GetInstalledFramework()` to find the implementation and then use the according extender namespace (`MirrorHook::D3D9Extender` & `MirrorHook::D3D11Extender`).
 
-After hooking the functions, it lets external applications add their own extension functions.
+
+## Example implementation:
 ```
 // Example:
-#include "path\to\MirrorHook\inc\Definitions.hpp"
+#include "path/to/MirrorHook/inc/Definitions.hpp"
 
-void WINAPI MySuperEndSceneExtension(LPDIRECT3DDEVICE9 pDevice) {
+void __stdcall MyD3D11PresentExtension(IDXGISwapChain *pSwapChain, UINT SyncInterval, UINT Flags) {
       // code...
 }
 
-void MyAwesomeInitFunction() {
+void __stdcall MyD3D9EndSceneExtension(LPDIRECT3DDEVICE9 pDevice) {
+      // code...
+}
+
+void MyInitFunction() {
       // Make sure MirrorHook was loaded into the memory.
       HMODULE hMirrorHook = nullptr;
       while (!hMirrorHook) {
-         hMirrorHook = GetModuleHandle("MirrorHook.asi");
+         hMirrorHook = GetModuleHandle("MirrorHook.dll");
          Sleep(100);
       }
-      // Let MirrorHook know what game you're working on
-      MirrorHook::PrepareFor(MirrorHook::Game::*);
       
-      // Add some super extension
-      MirrorHook::D3D9::AddExtension(MirrorHook::D3D9::D3D9Extension::EndScene, &MySuperEndSceneExtension);
-      
-      // Wait for the hook to finish, to get the window handle for example.
-      while (!MirrorHook::D3D9::IsReady()) {
-         Sleep(100);
+      // Wait while MirrorHook does its thing
+      if (MirrorHook::WasAutoInitSuccessful()) {
+         switch (MirrorHook::GetInstalledFramework()) {
+            case MirrorHook::Framework::D3D9:
+               MirrorHook::D3D9::AddExtension(MirrorHook::D3D9::D3D9Extension::EndScene, &MyD3D9EndSceneExtension);
+               break;
+            case MirrorHook::Framework::D3D11:
+               MirrorHook::D3D11::AddExtension(MirrorHook::D3D11::D3D11Extension::Present, &MyD3D11PresentExtension);
+               break;
+         }
+      } else {
+         // Initiate MirrorHook by window title
+         MirrorHook::PrepareFor(MirrorHook::Framework::*, "window title");
+         // or by window handle
+         MirrorHook::PrepareFor(MirrorHook::Framework::*, hWnd);
       }
 }
 ```
@@ -41,25 +49,11 @@ The actual DirectX libraries are **not needed** to write extensions, `void*` can
 ```
 // Example:
 // Instead of ->
-void WINAPI MySuperEndSceneExtension(LPDIRECT3DDEVICE9 pDevice);
+void WINAPI MyD3D9EndSceneExtension(LPDIRECT3DDEVICE9 pDevice);
 // You can type ->
-void WINAPI MySuperEndSceneExtension(LPVOID pDevice);
+void WINAPI MyD3D9EndSceneExtension(void *pDevice);
 ```
-### DirectInput8
-Same as the D3D9 implementation explained above. After it is injected, it waits for the game to create its instance of DirectInput8 and then it hooks the following function(s):
-- GetDeviceState
-
-Currently, only mouse and keyboard events are supported. 
 
 ## Development dependencies
 - [June 2010 DirectX SDK](https://www.microsoft.com/en-us/download/details.aspx?id=6812)
-- C++14 compliant compiler [e.g., VS2015 and above](https://www.visualstudio.com)
-- Universal CRT SDK
-
-## How to set up
-- Change the parameters of the `copy` command in Post-Build Event or remove it.
-- Compile.
-
-## Notes
-This is a strictly WIN32-API library. The code will *not* work in any other environment unless you can provide the necessary libraries. (e.g., WineHQ)
-The code utilizes C++14 and is built against the `Windows 7 SDK` with the `Visual Studio 2017 - Windows XP (v141_xp)` toolset. The output will work on Windows XP SP1 and above.
+- C++17 compliant compiler [e.g., VS2017 and above](https://www.visualstudio.com)

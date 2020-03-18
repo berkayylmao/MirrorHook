@@ -7,103 +7,85 @@
     <Filter Include="Helpers">
       <UniqueIdentifier>{97573e01-9f0c-4750-8c7d-3863ef3242eb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Helpers\External">
-      <UniqueIdentifier>{5e37479c-8113-4967-8d46-c52bc7666aa8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Helpers\Internal">
+    <Filter Include="Helpers">
       <UniqueIdentifier>{254145d7-4f1a-4b4e-8d3d-bd2624a01a06}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Helpers\Internal\Memory">
+    <Filter Include="Helpers\Memory">
       <UniqueIdentifier>{e5e02906-ab45-4d60-922a-06f0c95cec7f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Helpers\Internal\D3D9">
+    <Filter Include="Helpers\D3D9">
       <UniqueIdentifier>{f1d42127-df4e-4eb6-af76-e537e8f2b148}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Helpers\Internal\DI8">
-      <UniqueIdentifier>{7daa729a-b91e-4569-8e37-0bab807e0052}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Helpers\Internal\D3D11">
+    <Filter Include="Helpers\D3D11">
       <UniqueIdentifier>{846ccc64-a688-4ee4-8251-ddf4967f80be}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Helpers\Internal\imgui">
+    <Filter Include="Helpers\WndProc">
+      <UniqueIdentifier>{3b5d6179-56a6-413c-8254-95e09c34ff89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helpers\Dear ImGui">
       <UniqueIdentifier>{3006344a-9ea2-4d5e-90c9-6a4781c4ff16}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Helpers\Internal\imgui\dx9">
-      <UniqueIdentifier>{1c3ffe32-59e5-4ab6-968a-23309d8ca716}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Helpers\Internal\imgui\dx11">
-      <UniqueIdentifier>{f7835192-3569-47e1-89b1-0e34a54cd37c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Helpers\Internal\imgui\win32">
-      <UniqueIdentifier>{20bf0232-3868-4500-a91e-9afe9d74cbb2}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Helpers\Internal\WndProc">
-      <UniqueIdentifier>{3b5d6179-56a6-413c-8254-95e09c34ff89}</UniqueIdentifier>
+    <Filter Include="Helpers\Dear ImGui\Implementations">
+      <UniqueIdentifier>{01efe6ba-9a6a-4094-aa8b-3eca712fc04d}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
       <Filter>default</Filter>
     </ClInclude>
-    <ClInclude Include="inc\Definitions.hpp">
-      <Filter>Helpers\External</Filter>
-    </ClInclude>
     <ClInclude Include="resource.h">
       <Filter>default</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\D3D9\D3D9Types.h">
-      <Filter>Helpers\Internal\D3D9</Filter>
+    <ClInclude Include="Helpers\D3D9\D3D9Types.h">
+      <Filter>Helpers\D3D9</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\DI8\DI8Types.h">
-      <Filter>Helpers\Internal\DI8</Filter>
+    <ClInclude Include="Helpers\D3D11\D3D11Types.h">
+      <Filter>Helpers\D3D11</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\D3D11\D3D11Types.h">
-      <Filter>Helpers\Internal\D3D11</Filter>
+    <ClInclude Include="Helpers\D3D11\D3D11Extender.hpp">
+      <Filter>Helpers\D3D11</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\imstb_truetype.h">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClInclude Include="Helpers\D3D9\D3D9Extender.hpp">
+      <Filter>Helpers\D3D9</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\imconfig.h">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClInclude Include="Helpers\Memory\Memory.hpp">
+      <Filter>Helpers\Memory</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\imgui.h">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClInclude Include="Helpers\Memory\VTableHook.hpp">
+      <Filter>Helpers\Memory</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\imgui_internal.h">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClInclude Include="Helpers\WndProc\WndProcExtender.hpp">
+      <Filter>Helpers\WndProc</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\imstb_rectpack.h">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\imstb_truetype.h">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\imstb_textedit.h">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\imconfig.h">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\win32\imgui_impl_win32.h">
-      <Filter>Helpers\Internal\imgui\win32</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\imgui.h">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\dx11\imgui_impl_dx11.h">
-      <Filter>Helpers\Internal\imgui\dx11</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\imgui_internal.h">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\D3D11\D3D11Extender.hpp">
-      <Filter>Helpers\Internal\D3D11</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\imstb_rectpack.h">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\D3D9\D3D9Extender.hpp">
-      <Filter>Helpers\Internal\D3D9</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\imstb_textedit.h">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\imgui\dx9\imgui_impl_dx9.h">
-      <Filter>Helpers\Internal\imgui\dx9</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\Implementations\imgui_impl_win32.h">
+      <Filter>Helpers\Dear ImGui\Implementations</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\DI8\DI8Extender.hpp">
-      <Filter>Helpers\Internal\DI8</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\Implementations\imgui_impl_dx9.h">
+      <Filter>Helpers\Dear ImGui\Implementations</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\Memory\Memory.hpp">
-      <Filter>Helpers\Internal\Memory</Filter>
+    <ClInclude Include="Helpers\Dear ImGui\Implementations\imgui_impl_dx11.h">
+      <Filter>Helpers\Dear ImGui\Implementations</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\Internal\Memory\VTableHook.hpp">
-      <Filter>Helpers\Internal\Memory</Filter>
-    </ClInclude>
-    <ClInclude Include="Helpers\Internal\WndProc\WndProcExtender.hpp">
-      <Filter>Helpers\Internal\WndProc</Filter>
+    <ClInclude Include="Helpers\Memory\DetourHook.hpp">
+      <Filter>Helpers\Memory</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -111,26 +93,23 @@
       <Filter>default</Filter>
     </ClCompile>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="Helpers\Internal\imgui\imgui.cpp">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClCompile Include="Helpers\Dear ImGui\imgui.cpp">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Helpers\Internal\imgui\imgui_demo.cpp">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClCompile Include="Helpers\Dear ImGui\imgui_draw.cpp">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Helpers\Internal\imgui\imgui_draw.cpp">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClCompile Include="Helpers\Dear ImGui\imgui_widgets.cpp">
+      <Filter>Helpers\Dear ImGui</Filter>
     </ClCompile>
-    <ClCompile Include="Helpers\Internal\imgui\imgui_widgets.cpp">
-      <Filter>Helpers\Internal\imgui</Filter>
+    <ClCompile Include="Helpers\Dear ImGui\Implementations\imgui_impl_dx9.cpp">
+      <Filter>Helpers\Dear ImGui\Implementations</Filter>
     </ClCompile>
-    <ClCompile Include="Helpers\Internal\imgui\win32\imgui_impl_win32.cpp">
-      <Filter>Helpers\Internal\imgui\win32</Filter>
+    <ClCompile Include="Helpers\Dear ImGui\Implementations\imgui_impl_dx11.cpp">
+      <Filter>Helpers\Dear ImGui\Implementations</Filter>
     </ClCompile>
-    <ClCompile Include="Helpers\Internal\imgui\dx11\imgui_impl_dx11.cpp">
-      <Filter>Helpers\Internal\imgui\dx11</Filter>
-    </ClCompile>
-    <ClCompile Include="Helpers\Internal\imgui\dx9\imgui_impl_dx9.cpp">
-      <Filter>Helpers\Internal\imgui\dx9</Filter>
+    <ClCompile Include="Helpers\Dear ImGui\Implementations\imgui_impl_win32.cpp">
+      <Filter>Helpers\Dear ImGui\Implementations</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -139,8 +118,9 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="MirrorHook.licenseheader">
-      <Filter>default</Filter>
+    <None Include="Helpers\Dear ImGui\imgui.licenseheader">
+      <Filter>Helpers\Dear ImGui</Filter>
     </None>
+    <None Include="MirrorHook.licenseheader" />
   </ItemGroup>
 </Project>
