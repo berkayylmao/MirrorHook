@@ -28,6 +28,7 @@
 #include "Helpers/D3D11/D3D11Extender.hpp"
 
 namespace MirrorHookInternals {
+   std::mutex            initMutex;
    bool                  bStopWaitingAutoInit = false;
    MirrorHook::Framework installedFramework   = MirrorHook::Framework::None;
 
@@ -58,6 +59,7 @@ namespace MirrorHookInternals {
 
    bool __stdcall PrepareForWithWindowTitleName(MirrorHook::Framework requestedFrameworkType, const TCHAR* const windowTitleName) {
    #pragma ExportedFunction
+      initMutex.lock();
       if (installedFramework == MirrorHook::Framework::None && windowTitleName) {
          switch (requestedFrameworkType) {
             case MirrorHook::Framework::D3D9:
@@ -78,10 +80,12 @@ namespace MirrorHookInternals {
             break;
          }
       }
+      initMutex.unlock();
       return IsReady();
    }
    bool __stdcall PrepareForWithWindowHandle(MirrorHook::Framework requestedFrameworkType, HWND* pWindowHandle) {
    #pragma ExportedFunction
+      initMutex.lock();
       if (installedFramework == MirrorHook::Framework::None && pWindowHandle) {
          switch (requestedFrameworkType) {
             case MirrorHook::Framework::D3D9:
@@ -102,6 +106,7 @@ namespace MirrorHookInternals {
             break;
          }
       }
+      initMutex.unlock();
       return IsReady();
    }
 }
@@ -152,7 +157,8 @@ DWORD WINAPI Init(LPVOID) { // try to auto init
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID) {
    if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
       DisableThreadLibraryCalls(hModule);
-      CreateThread(NULL, 0, &Init, NULL, 0, NULL);
+      if (auto t = CreateThread(NULL, 0, &Init, NULL, 0, NULL))
+         CloseHandle(t);
    }
    return TRUE;
 }
