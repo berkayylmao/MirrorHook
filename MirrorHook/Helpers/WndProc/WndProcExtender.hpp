@@ -27,9 +27,10 @@
 #include "stdafx.h"
 
 namespace MirrorHookInternals::WndProcExtender {
-   HWND    windowHandle = nullptr;
-   WNDPROC origWndProc  = nullptr;
-   auto    extensions   = std::vector<WNDPROC>();
+   std::mutex wndMutex;
+   HWND       windowHandle = nullptr;
+   WNDPROC    origWndProc  = nullptr;
+   auto       extensions   = std::vector<WNDPROC>();
 
    LRESULT CALLBACK hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
       if (!extensions.empty()) {
@@ -50,7 +51,9 @@ namespace MirrorHookInternals::WndProcExtender {
 
    void __stdcall AddExtension(LPVOID extensionAddress) {
    #pragma ExportedFunction
+      wndMutex.lock();
       extensions.push_back(reinterpret_cast<WNDPROC>(extensionAddress));
+      wndMutex.unlock();
    }
    HWND __stdcall GetWindowHandle() {
    #pragma ExportedFunction

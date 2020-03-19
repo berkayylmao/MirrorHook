@@ -47,11 +47,12 @@ namespace MirrorHookInternals {
 
       bool                    useImGui                  = true;
       bool                    isImGuiReady              = false;
-      unsigned int            infoOverlayFrame          = 301;
-      unsigned int            infoOverlayFrame_MaxFrame = 300;
+      uint32_t                infoOverlayFrame          = 301;
+      uint32_t                infoOverlayFrame_MaxFrame = 300;
 
       bool                    isExtenderReady           = false;
-      static std::once_flag   isExtenderReadyLock;
+      std::once_flag          isExtenderReadyLock;
+      std::mutex              d3d11Mutex;
 
    #pragma region function hooks
       std::unique_ptr<Helpers::VTableHook> dxgiSwapChainHook          = nullptr;
@@ -149,13 +150,16 @@ namespace MirrorHookInternals {
       }
       bool __stdcall AddExtension(D3D11Extension extensionType, LPVOID extensionAddress) {
       #pragma ExportedFunction
+         d3d11Mutex.lock();
          switch (extensionType) {
             case D3D11Extension::Present:
                vPresentExtensions.push_back(reinterpret_cast<D3D11Types::Present_t>(extensionAddress));
                break;
             default:
+               d3d11Mutex.unlock();
                return false;
          }
+         d3d11Mutex.unlock();
          return true;
       }
       bool __stdcall IsReady() {
@@ -169,6 +173,7 @@ namespace MirrorHookInternals {
          windowHandle     = *pWindowHandle;
          if (windowHandle == nullptr)
             return false;
+         WndProcExtender::Init(pWindowHandle);
 
          // Get D3D11 device and swap chain
          D3D_FEATURE_LEVEL levels[] ={ D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1 };
@@ -194,7 +199,6 @@ namespace MirrorHookInternals {
          dxgiSwapChainHook = std::make_unique<Helpers::VTableHook>((PDWORD_PTR*)pFakeSwapChain);
          origPresent       = dxgiSwapChainHook->Hook(8, hkPresent);
 
-         WndProcExtender::Init(pWindowHandle);
          isExtenderReady = true;
          return origPresent != nullptr;
       }

@@ -47,10 +47,11 @@ namespace MirrorHookInternals {
 
       bool              useImGui                  = true;
       bool              isImGuiReady              = false;
-      unsigned int      infoOverlayFrame          = 301;
-      unsigned int      infoOverlayFrame_MaxFrame = 300;
+      uint32_t          infoOverlayFrame          = 301;
+      uint32_t          infoOverlayFrame_MaxFrame = 300;
 
       bool              isExtenderReady           = false;
+      std::mutex        d3d9Mutex;
 
    #pragma region function hooks
       std::unique_ptr<Helpers::DetourHook> d3dDeviceHook       = nullptr;
@@ -193,6 +194,7 @@ namespace MirrorHookInternals {
       }
       bool __stdcall AddExtension(D3D9Extension extensionType, LPVOID extensionAddress) {
       #pragma ExportedFunction
+         d3d9Mutex.lock();
          switch (extensionType) {
             case D3D9Extension::BeginScene:
                vBeginSceneExtensions.push_back(reinterpret_cast<D3D9Types::BeginScene_t>(extensionAddress));
@@ -207,8 +209,10 @@ namespace MirrorHookInternals {
                vAfterResetExtensions.push_back(reinterpret_cast<D3D9Types::Reset_t>(extensionAddress));
                break;
             default:
+               d3d9Mutex.unlock();
                return false;
          }
+         d3d9Mutex.unlock();
          return true;
       }
       bool __stdcall IsReady() {
@@ -222,6 +226,7 @@ namespace MirrorHookInternals {
          windowHandle     = *pWindowHandle;
          if (windowHandle == nullptr)
             return false;
+         WndProcExtender::Init(pWindowHandle);
 
          D3DPRESENT_PARAMETERS params ={ 0 };
          {
@@ -251,7 +256,6 @@ namespace MirrorHookInternals {
          pD3D->Release();
          pD3D = nullptr;
 
-         WndProcExtender::Init(pWindowHandle);
          isExtenderReady = true;
          return true;
       }
