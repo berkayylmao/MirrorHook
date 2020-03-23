@@ -35,25 +35,25 @@ namespace Helpers::Memory {
     MemoryAccessInfo() = default;
     MemoryAccessInfo(int32_t _size) : oldMemoryAccess(NULL) { size = _size; }
   };
-  static inline std::map<DWORD_PTR, MemoryAccessInfo> _accessMap;
-  static inline std::mutex                            _memoryMutex;
+  static inline std::unordered_map<DWORD_PTR, MemoryAccessInfo> _accessMap;
+  static inline std::mutex                                      _memoryMutex;
 
   static void openMemoryAccess(const DWORD_PTR address, const int size) {
+    std::scoped_lock _lock(_memoryMutex);
+
     MemoryAccessInfo mA(size);
     VirtualProtect((LPVOID)address, size, PAGE_EXECUTE_READWRITE, &mA.oldMemoryAccess);
 
-    _memoryMutex.lock();
     _accessMap.insert(std::make_pair(address, mA));
-    _memoryMutex.unlock();
   }
   static void restoreMemoryAccess(const DWORD_PTR address) {
+    std::scoped_lock _lock(_memoryMutex);
+
     MemoryAccessInfo* pMA = &_accessMap[address];
     VirtualProtect((LPVOID)address, pMA->size, pMA->oldMemoryAccess, &pMA->oldMemoryAccess);
     pMA = nullptr;
 
-    _memoryMutex.lock();
     _accessMap.erase(address);
-    _memoryMutex.unlock();
   }
 
   static void writeJMP(const DWORD_PTR from, const DWORD_PTR to) {

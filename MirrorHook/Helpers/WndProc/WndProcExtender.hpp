@@ -53,9 +53,8 @@ namespace MirrorHookInternals::WndProcExtender {
 
   void __stdcall AddExtension(LPVOID extensionAddress) {
 #pragma ExportedFunction
-    wndMutex.lock();
+    std::scoped_lock _lock(wndMutex);
     extensions.push_back(reinterpret_cast<WNDPROC>(extensionAddress));
-    wndMutex.unlock();
   }
   HWND __stdcall GetWindowHandle() {
 #pragma ExportedFunction

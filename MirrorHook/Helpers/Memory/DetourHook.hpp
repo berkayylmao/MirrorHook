@@ -26,7 +26,6 @@
 
 #pragma once
 #include "stdafx.h"
-#include "Memory.hpp"
 
 namespace Helpers {
   class DetourInfo {
@@ -50,17 +49,16 @@ namespace Helpers {
     BYTE* _getHookBytes() { return hookBytes; }
 
     DetourInfo() = default;
-    DetourInfo(DWORD_PTR _address) { address = _address; }
+    DetourInfo(DWORD_PTR _address) : originalBytes{0x00}, hookBytes{0x00} { address = _address; }
   };
 
   class DetourHook {
-    DetourHook(const DetourHook&) = delete;
-
-    std::map<DWORD_PTR, DetourInfo> _detourMap;
-    std::mutex                      _mutex;
+    std::unordered_map<DWORD_PTR, DetourInfo> _detourMap;
+    std::mutex                                _mutex;
 
    public:
     DetourInfo* GetInfoOf(const DWORD_PTR address) {
+      std::scoped_lock _lock(_mutex);
       if (_detourMap.count(address)) return &_detourMap[address];
 
       return nullptr;
@@ -72,37 +70,35 @@ namespace Helpers {
 
     template <class Type>
     Type Hook(const DWORD_PTR targetAddress, const Type fnNew) {
-      DetourInfo dI(targetAddress);
+      std::scoped_lock _lock(_mutex);
 
+      DetourInfo dI(targetAddress);
       Memory::openMemoryAccess(targetAddress, 5);
       memcpy_s(dI._getOriginalBytes(), 5, (LPVOID)targetAddress, 5);
       Memory::writeJMP(targetAddress, (DWORD_PTR)fnNew);
       memcpy_s(dI._getHookBytes(), 5, (LPVOID)targetAddress, 5);
       Memory::restoreMemoryAccess(targetAddress);
 
-      _mutex.lock();
       _detourMap.insert(std::make_pair(targetAddress, dI));
-      _mutex.unlock();
 
       return (Type)targetAddress;
     }
     void Unhook(const DWORD_PTR address) {
+      std::scoped_lock _lock(_mutex);
       if (_detourMap.count(address)) {
-        _mutex.lock();
         _detourMap[address].Unhook();
         _detourMap.erase(address);
-        _mutex.unlock();
       }
     }
     void UnhookAll() {
+      std::scoped_lock _lock(_mutex);
       for (auto& dI : _detourMap) dI.second.Unhook();
 
-      _mutex.lock();
       _detourMap.clear();
-      _mutex.unlock();
     }
 
-    DetourHook() = default;
+    DetourHook(const DetourHook&) = delete;
+    DetourHook()                  = default;
     ~DetourHook() { UnhookAll(); }
   };
 }  // namespace Helpers

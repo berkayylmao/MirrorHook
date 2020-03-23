@@ -26,19 +26,18 @@
 
 #pragma once
 #include "stdafx.h"
-#include "Memory.hpp"
 
 namespace Helpers {
   class VTableHook {
-    VTableHook(const VTableHook&) = delete;
-
-    DWORD_PTR*                _vt;
-    std::map<UINT, DWORD_PTR> _hookMap;
-    std::mutex                _mutex;
+    DWORD_PTR*                          _vt;
+    std::unordered_map<UINT, DWORD_PTR> _hookMap;
+    std::mutex                          _mutex;
 
    public:
     template <class Type>
     Type Hook(UINT index, Type fnNew) {
+      std::scoped_lock _lock(_mutex);
+
       DWORD_PTR fnOrig = _vt[index];
       if (!_hookMap.count(index)) {
         DWORD_PTR targetAddr = (DWORD_PTR)&_vt[index];
@@ -46,26 +45,25 @@ namespace Helpers {
         _vt[index] = (DWORD_PTR)fnNew;
         Memory::restoreMemoryAccess(targetAddr);
 
-        _mutex.lock();
         _hookMap.insert(std::make_pair(index, fnOrig));
-        _mutex.unlock();
       }
       return (Type)fnOrig;
     }
 
     void Unhook(UINT index) {
+      std::scoped_lock _lock(_mutex);
+
       if (_hookMap.count(index)) {
         DWORD_PTR targetAddr = (DWORD_PTR)&_vt[index];
         Memory::openMemoryAccess(targetAddr, sizeof(DWORD_PTR));
         _vt[index] = _hookMap.at(index);
         Memory::restoreMemoryAccess(targetAddr);
 
-        _mutex.lock();
         _hookMap.erase(index);
-        _mutex.unlock();
       }
     }
     void UnhookAll() {
+      std::scoped_lock _lock(_mutex);
       for (auto const& hook : _hookMap) {
         DWORD_PTR targetAddr = (DWORD_PTR)&_vt[hook.first];
         Memory::openMemoryAccess(targetAddr, sizeof(DWORD_PTR));
@@ -73,11 +71,10 @@ namespace Helpers {
         Memory::restoreMemoryAccess(targetAddr);
       }
 
-      _mutex.lock();
       _hookMap.clear();
-      _mutex.unlock();
     }
 
+    VTableHook(const VTableHook&) = delete;
     VTableHook(PDWORD_PTR* ppClass) { _vt = *ppClass; }
     ~VTableHook() { UnhookAll(); }
   };

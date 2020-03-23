@@ -39,9 +39,13 @@ using MirrorHook::D3D9::D3D9Extension;
 
 namespace MirrorHookInternals {
   namespace D3D9Extender {
-    std::mutex        d3d9Mutex;
-    LPDIRECT3DDEVICE9 d3dDevice    = nullptr;
-    HWND              windowHandle = nullptr;
+    std::mutex                           d3d9Mutex;
+    LPDIRECT3DDEVICE9                    d3dDevice    = nullptr;
+    HWND                                 windowHandle = nullptr;
+    std::vector<D3D9Types::BeginScene_t> vBeginSceneExtensions;
+    std::vector<D3D9Types::EndScene_t>   vEndSceneExtensions;
+    std::vector<D3D9Types::Reset_t>      vBeforeResetExtensions;
+    std::vector<D3D9Types::Reset_t>      vAfterResetExtensions;
 
     bool     isExtenderReady           = false;
     bool     isUsingVTableHook         = false;
@@ -49,10 +53,6 @@ namespace MirrorHookInternals {
     bool     isImGuiReady              = false;
     uint32_t infoOverlayFrame          = 0;
     uint32_t infoOverlayFrame_MaxFrame = 300;
-    auto     vBeginSceneExtensions     = std::vector<D3D9Types::BeginScene_t>();
-    auto     vEndSceneExtensions       = std::vector<D3D9Types::EndScene_t>();
-    auto     vBeforeResetExtensions    = std::vector<D3D9Types::Reset_t>();
-    auto     vAfterResetExtensions     = std::vector<D3D9Types::Reset_t>();
 
 #pragma region function hooks
     std::unique_ptr<Helpers::DetourHook> d3dDeviceDetourHook = nullptr;
@@ -104,40 +104,36 @@ namespace MirrorHookInternals {
             if (endSceneExtension) endSceneExtension(pDevice);
           }
         }
-        if (useImGui && isImGuiReady) {
-          if (infoOverlayFrame_MaxFrame == -1 || infoOverlayFrame < infoOverlayFrame_MaxFrame) {
-            ImGui::SetNextWindowPos(ImVec2(10.0f, 40.0f), ImGuiCond_Once);
-            if (ImGui::Begin("##MirrorHook", nullptr,
-                             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs |
-                                 ImGuiWindowFlags_AlwaysAutoResize)) {
-              ImGui::Text(MirrorHookVersionInfo);
-              ImGui::Text("https://github.com/berkayylmao/MirrorHook");
-              ImGui::Text("by berkayylmao");
-              ImGui::Separator();
+        if (useImGui && isImGuiReady && infoOverlayFrame < infoOverlayFrame_MaxFrame) {
+          ImGui::SetNextWindowPos(ImVec2(10.0f, 40.0f), ImGuiCond_Once);
+          if (ImGui::Begin("##MirrorHook", nullptr,
+                           ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs |
+                               ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text(MirrorHookVersionInfo);
+            ImGui::Text("https://github.com/berkayylmao/MirrorHook");
+            ImGui::Text("by berkayylmao");
+            ImGui::Separator();
 
-              ImGui::Text("D3D9 Extender Information");
-              ImGui::Indent(5.0f);
-              {
-                ImGui::Text("BeginScene  | EndScene extensions   : %d | %d",
-                            vBeginSceneExtensions.size(), vEndSceneExtensions.size());
-                ImGui::Text("BeforeReset | AfterReset extensions : %d | %d",
-                            vBeforeResetExtensions.size(), vAfterResetExtensions.size());
-              }
-              ImGui::Unindent(5.0f);
-
-              if (infoOverlayFrame_MaxFrame != -1) {
-                ImGui::Separator();
-                ImGui::Text("I will disappear in... %04u.",
-                            infoOverlayFrame_MaxFrame - infoOverlayFrame);
-
-                infoOverlayFrame++;
-                useImGui = (infoOverlayFrame < infoOverlayFrame_MaxFrame);
-              }
+            ImGui::Text("D3D9 Extender Information");
+            ImGui::Indent(5.0f);
+            {
+              ImGui::Text("BeginScene  | EndScene extensions   : %d | %d",
+                          vBeginSceneExtensions.size(), vEndSceneExtensions.size());
+              ImGui::Text("BeforeReset | AfterReset extensions : %d | %d",
+                          vBeforeResetExtensions.size(), vAfterResetExtensions.size());
             }
-            ImGui::End();
-            ImGui::Render();
-            ImGui_ImplDX9::RenderDrawData(ImGui::GetDrawData());
+            ImGui::Unindent(5.0f);
+
+            ImGui::Separator();
+            ImGui::Text("I will disappear in... %04u.",
+                        infoOverlayFrame_MaxFrame - infoOverlayFrame);
+
+            infoOverlayFrame++;
+            useImGui = (infoOverlayFrame < infoOverlayFrame_MaxFrame);
           }
+          ImGui::End();
+          ImGui::Render();
+          ImGui_ImplDX9::RenderDrawData(ImGui::GetDrawData());
         }
       }
 
@@ -193,11 +189,10 @@ namespace MirrorHookInternals {
         origEndScene        = d3dDeviceVTableHook->Hook(42, hkEndScene);
         origBeginStateBlock = d3dDeviceVTableHook->Hook(60, hkBeginStateBlock);
       } else {
-        d3dDeviceDetourHook->GetInfoOf(origBeginStateBlock)->Unhook();
+        d3dDeviceDetourHook->UnhookAll();
         ret = origBeginStateBlock(pDevice);
 
         DWORD_PTR* vtDevice = *(PDWORD_PTR*)pDevice;
-        d3dDeviceDetourHook->UnhookAll();
         origReset           = d3dDeviceDetourHook->Hook(vtDevice[16], hkReset);
         origBeginScene      = d3dDeviceDetourHook->Hook(vtDevice[41], hkBeginScene);
         origEndScene        = d3dDeviceDetourHook->Hook(vtDevice[42], hkEndScene);
@@ -217,7 +212,7 @@ namespace MirrorHookInternals {
     }
     bool __stdcall AddExtension(D3D9Extension extensionType, LPVOID extensionAddress) {
 #pragma ExportedFunction
-      d3d9Mutex.lock();
+      std::scoped_lock _lock(d3d9Mutex);
       switch (extensionType) {
         case D3D9Extension::BeginScene:
           vBeginSceneExtensions.push_back(
@@ -233,10 +228,8 @@ namespace MirrorHookInternals {
           vAfterResetExtensions.push_back(reinterpret_cast<D3D9Types::Reset_t>(extensionAddress));
           break;
         default:
-          d3d9Mutex.unlock();
           return false;
       }
-      d3d9Mutex.unlock();
       return true;
     }
     bool __stdcall IsReady() {

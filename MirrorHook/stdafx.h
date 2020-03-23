@@ -32,12 +32,13 @@
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
 
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <mutex>   // std::mutex, std::call_once, std::once_flag
 #include <memory>  // std::unique_ptr, std::make_unique
 #pragma warning(pop)
 
+#include "Helpers/Memory/Memory.hpp"
 #include "../inc/Definitions.hpp"
 constexpr const char* MirrorHookVersionInfo = "MirrorHook v2.2";
 #define ExportedFunction comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)

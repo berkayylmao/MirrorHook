@@ -27,9 +27,8 @@
 #pragma once
 
 #include "stdafx.h"
-#include "Helpers/Memory/Memory.hpp"
-#include "Helpers/Memory/VTableHook.hpp"
 #include "Helpers/D3D11/D3D11Types.h"
+#include "Helpers/Memory/VTableHook.hpp"
 #include "Helpers/WndProc/WndProcExtender.hpp"
 #include "Helpers/Dear ImGui/imgui.h"
 #include "Helpers/Dear ImGui/Implementations/imgui_impl_dx11.h"
@@ -39,21 +38,19 @@ using MirrorHook::D3D11::D3D11Extension;
 
 namespace MirrorHookInternals {
   namespace D3D11Extender {
-    HWND                    windowHandle      = nullptr;
-    ID3D11Device*           pD3DDevice        = nullptr;
-    ID3D11DeviceContext*    pD3DDeviceContext = nullptr;
-    ID3D11RenderTargetView* pRenderTargetView = nullptr;
-
-    auto vPresentExtensions = std::vector<D3D11Types::Present_t>();
-
-    bool     useImGui                  = true;
-    bool     isImGuiReady              = false;
-    uint32_t infoOverlayFrame          = 301;
-    uint32_t infoOverlayFrame_MaxFrame = 300;
+    std::mutex                         d3d11Mutex;
+    ID3D11Device*                      pD3DDevice        = nullptr;
+    ID3D11DeviceContext*               pD3DDeviceContext = nullptr;
+    ID3D11RenderTargetView*            pRenderTargetView = nullptr;
+    HWND                               windowHandle      = nullptr;
+    std::vector<D3D11Types::Present_t> vPresentExtensions;
 
     bool           isExtenderReady = false;
     std::once_flag isExtenderReadyLock;
-    std::mutex     d3d11Mutex;
+    bool           useImGui                  = true;
+    bool           isImGuiReady              = false;
+    uint32_t       infoOverlayFrame          = 0;
+    uint32_t       infoOverlayFrame_MaxFrame = 300;
 
 #pragma region function hooks
     std::unique_ptr<Helpers::VTableHook> dxgiSwapChainHook = nullptr;
@@ -87,45 +84,41 @@ namespace MirrorHookInternals {
         }
       }
 
-      if (useImGui && isImGuiReady) {
-        if (infoOverlayFrame_MaxFrame == -1 || infoOverlayFrame < infoOverlayFrame_MaxFrame) {
-          ImGui_ImplDX11::NewFrame();
-          ImGui_ImplWin32_NewFrame();
-          ImGui::NewFrame();
+      if (useImGui && isImGuiReady && infoOverlayFrame < infoOverlayFrame_MaxFrame) {
+        ImGui_ImplDX11::NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
 
-          ImGui::SetNextWindowPos(ImVec2(10.0f, 40.0f), ImGuiCond_Once);
-          if (ImGui::Begin("##MirrorHook", nullptr,
-                           ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs |
-                               ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text(MirrorHookVersionInfo);
-            ImGui::Text("https://github.com/berkayylmao/MirrorHook");
-            ImGui::Text("by berkayylmao");
+        ImGui::SetNextWindowPos(ImVec2(10.0f, 40.0f), ImGuiCond_Once);
+        if (ImGui::Begin("##MirrorHook", nullptr,
+                         ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoInputs |
+                             ImGuiWindowFlags_AlwaysAutoResize)) {
+          ImGui::Text(MirrorHookVersionInfo);
+          ImGui::Text("https://github.com/berkayylmao/MirrorHook");
+          ImGui::Text("by berkayylmao");
+          ImGui::Separator();
+
+          ImGui::Text("D3D11 Extender Information");
+          ImGui::Indent(5.0f);
+          { ImGui::Text("Present extensions: %d", vPresentExtensions.size()); }
+          ImGui::Unindent(5.0f);
+
+          if (infoOverlayFrame_MaxFrame != -1) {
             ImGui::Separator();
+            ImGui::Text("I will disappear in... %04u.",
+                        infoOverlayFrame_MaxFrame - infoOverlayFrame);
 
-            ImGui::Text("D3D11 Extender Information");
-            ImGui::Indent(5.0f);
-            { ImGui::Text("Present extensions: %d", vPresentExtensions.size()); }
-            ImGui::Unindent(5.0f);
-
-            if (infoOverlayFrame_MaxFrame != -1) {
-              ImGui::Separator();
-              ImGui::Text("I will disappear in... %04u.",
-                          infoOverlayFrame_MaxFrame - infoOverlayFrame);
-
-              infoOverlayFrame++;
-              if (infoOverlayFrame >= infoOverlayFrame_MaxFrame) {
-                ImGui::End();
-                ImGui::Render();
-                ImGui_ImplDX11::RenderDrawData(ImGui::GetDrawData());
-                useImGui = false;
-                return origPresent(pSwapChain, SyncInterval, Flags);
-              }
-            }
+            infoOverlayFrame++;
+            ImGui::End();
+            ImGui::Render();
+            ImGui_ImplDX11::RenderDrawData(ImGui::GetDrawData());
+            useImGui = false;
+            return origPresent(pSwapChain, SyncInterval, Flags);
           }
-          ImGui::End();
-          ImGui::Render();
-          ImGui_ImplDX11::RenderDrawData(ImGui::GetDrawData());
         }
+        ImGui::End();
+        ImGui::Render();
+        ImGui_ImplDX11::RenderDrawData(ImGui::GetDrawData());
       }
       return origPresent(pSwapChain, SyncInterval, Flags);
     }
@@ -146,16 +139,14 @@ namespace MirrorHookInternals {
     }
     bool __stdcall AddExtension(D3D11Extension extensionType, LPVOID extensionAddress) {
 #pragma ExportedFunction
-      d3d11Mutex.lock();
+      std::scoped_lock _lock(d3d11Mutex);
       switch (extensionType) {
         case D3D11Extension::Present:
           vPresentExtensions.push_back(reinterpret_cast<D3D11Types::Present_t>(extensionAddress));
           break;
         default:
-          d3d11Mutex.unlock();
           return false;
       }
-      d3d11Mutex.unlock();
       return true;
     }
     bool __stdcall IsReady() {
@@ -165,12 +156,9 @@ namespace MirrorHookInternals {
 #pragma endregion
 
     bool Init(HWND* pWindowHandle) {
-      infoOverlayFrame = 0;
-      windowHandle     = *pWindowHandle;
+      windowHandle = *pWindowHandle;
       if (windowHandle == nullptr) return false;
-      WndProcExtender::Init(pWindowHandle);
 
-      // Get D3D11 device and swap chain
       D3D_FEATURE_LEVEL    levels[] = {D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1};
       D3D_FEATURE_LEVEL    obtainedLevel;
       DXGI_SWAP_CHAIN_DESC sd;
@@ -197,8 +185,9 @@ namespace MirrorHookInternals {
       dxgiSwapChainHook = std::make_unique<Helpers::VTableHook>((PDWORD_PTR*)pFakeSwapChain);
       origPresent       = dxgiSwapChainHook->Hook(8, hkPresent);
 
-      isExtenderReady = true;
-      return origPresent != nullptr;
+      isExtenderReady = origPresent != nullptr;
+      if (isExtenderReady) WndProcExtender::Init(pWindowHandle);
+      return isExtenderReady;
     }
     bool Init(const TCHAR* const windowTitleName) {
       if (windowHandle = FindWindow(0, windowTitleName)) return Init(&windowHandle);
