@@ -2,7 +2,8 @@
    The MIT License (MIT)
 
    Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
-       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578',
+   'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -28,89 +29,80 @@
 #include "Memory.hpp"
 
 namespace Helpers {
-   class DetourInfo {
-      DWORD_PTR address;
-      BYTE      originalBytes[5];
-      BYTE      hookBytes[5];
+  class DetourInfo {
+    DWORD_PTR address;
+    BYTE      originalBytes[5];
+    BYTE      hookBytes[5];
 
    public:
-      void Unhook() {
-         Memory::openMemoryAccess(address, 5);
-         memcpy_s((LPVOID)address, 5, originalBytes, 5);
-         Memory::restoreMemoryAccess(address);
-      }
-      void Hook() {
-         Memory::openMemoryAccess(address, 5);
-         memcpy_s((LPVOID)address, 5, hookBytes, 5);
-         Memory::restoreMemoryAccess(address);
-      }
+    void Unhook() {
+      Memory::openMemoryAccess(address, 5);
+      memcpy_s((LPVOID)address, 5, originalBytes, 5);
+      Memory::restoreMemoryAccess(address);
+    }
+    void Hook() {
+      Memory::openMemoryAccess(address, 5);
+      memcpy_s((LPVOID)address, 5, hookBytes, 5);
+      Memory::restoreMemoryAccess(address);
+    }
 
-      BYTE* _getOriginalBytes() {
-         return originalBytes;
-      }
-      BYTE* _getHookBytes() {
-         return hookBytes;
-      }
+    BYTE* _getOriginalBytes() { return originalBytes; }
+    BYTE* _getHookBytes() { return hookBytes; }
 
-      DetourInfo() = default;
-      DetourInfo(DWORD_PTR _address) {
-         address = _address;
-      }
-   };
+    DetourInfo() = default;
+    DetourInfo(DWORD_PTR _address) { address = _address; }
+  };
 
-   class DetourHook {
-      DetourHook(const DetourHook&) = delete;
+  class DetourHook {
+    DetourHook(const DetourHook&) = delete;
 
-      std::map<DWORD_PTR, DetourInfo> _detourMap;
-      std::mutex                      _mutex;
+    std::map<DWORD_PTR, DetourInfo> _detourMap;
+    std::mutex                      _mutex;
+
    public:
-      DetourInfo* GetInfoOf(const DWORD_PTR address) {
-         if (_detourMap.count(address))
-            return &_detourMap[address];
+    DetourInfo* GetInfoOf(const DWORD_PTR address) {
+      if (_detourMap.count(address)) return &_detourMap[address];
 
-         return nullptr;
+      return nullptr;
+    }
+    template <class Type>
+    DetourInfo* GetInfoOf(const Type fn) {
+      return GetInfoOf((DWORD_PTR)fn);
+    }
+
+    template <class Type>
+    Type Hook(const DWORD_PTR targetAddress, const Type fnNew) {
+      DetourInfo dI(targetAddress);
+
+      Memory::openMemoryAccess(targetAddress, 5);
+      memcpy_s(dI._getOriginalBytes(), 5, (LPVOID)targetAddress, 5);
+      Memory::writeJMP(targetAddress, (DWORD_PTR)fnNew);
+      memcpy_s(dI._getHookBytes(), 5, (LPVOID)targetAddress, 5);
+      Memory::restoreMemoryAccess(targetAddress);
+
+      _mutex.lock();
+      _detourMap.insert(std::make_pair(targetAddress, dI));
+      _mutex.unlock();
+
+      return (Type)targetAddress;
+    }
+    void Unhook(const DWORD_PTR address) {
+      if (_detourMap.count(address)) {
+        _mutex.lock();
+        _detourMap[address].Unhook();
+        _detourMap.erase(address);
+        _mutex.unlock();
       }
-      template<class Type>
-      DetourInfo* GetInfoOf(const Type fn) {
-         return GetInfoOf((DWORD_PTR)fn);
-      }
+    }
+    void UnhookAll() {
+      for (auto& dI : _detourMap) dI.second.Unhook();
 
-      template<class Type>
-      Type Hook(const DWORD_PTR targetAddress, const Type fnNew) {
-         DetourInfo dI(targetAddress);
+      _mutex.lock();
+      _detourMap.clear();
+      _mutex.unlock();
+    }
 
-         Memory::openMemoryAccess(targetAddress, 5);
-         memcpy_s(dI._getOriginalBytes(), 5, (LPVOID)targetAddress, 5);
-         Memory::writeJMP(targetAddress, (DWORD_PTR)fnNew);
-         memcpy_s(dI._getHookBytes(), 5, (LPVOID)targetAddress, 5);
-         Memory::restoreMemoryAccess(targetAddress);
-
-         _mutex.lock();
-         _detourMap.insert(std::make_pair(targetAddress, dI));
-         _mutex.unlock();
-
-         return (Type)targetAddress;
-      }
-      void Unhook(const DWORD_PTR address) {
-         if (_detourMap.count(address)) {
-            _mutex.lock();
-            _detourMap[address].Unhook();
-            _detourMap.erase(address);
-            _mutex.unlock();
-         }
-      }
-      void UnhookAll() {
-         for (auto& dI : _detourMap)
-            dI.second.Unhook();
-
-         _mutex.lock();
-         _detourMap.clear(); // just in case
-         _mutex.unlock();
-      }
-
-      DetourHook() = default;
-      ~DetourHook() {
-         UnhookAll();
-      }
-   };
-}
+    DetourHook() = default;
+    ~DetourHook() { UnhookAll(); }
+  };
+}  // namespace Helpers

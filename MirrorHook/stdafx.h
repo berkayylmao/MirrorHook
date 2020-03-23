@@ -2,7 +2,8 @@
    The MIT License (MIT)
 
    Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
-       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578',
+   'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -33,8 +34,8 @@
 
 #include <map>
 #include <vector>
-#include <mutex>  // std::mutex, std::call_once, std::once_flag
-#include <memory> // std::unique_ptr, std::make_unique
+#include <mutex>   // std::mutex, std::call_once, std::once_flag
+#include <memory>  // std::unique_ptr, std::make_unique
 #pragma warning(pop)
 
 #include "../inc/Definitions.hpp"

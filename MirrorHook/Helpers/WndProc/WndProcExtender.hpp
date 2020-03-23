@@ -2,7 +2,8 @@
    The MIT License (MIT)
 
    Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
-       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578',
+   'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -27,41 +28,42 @@
 #include "stdafx.h"
 
 namespace MirrorHookInternals::WndProcExtender {
-   std::mutex wndMutex;
-   HWND       windowHandle = nullptr;
-   WNDPROC    origWndProc  = nullptr;
-   auto       extensions   = std::vector<WNDPROC>();
+  std::mutex wndMutex;
+  HWND       windowHandle = nullptr;
+  WNDPROC    origWndProc  = nullptr;
+  auto       extensions   = std::vector<WNDPROC>();
 
-   LRESULT CALLBACK hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
-      if (!extensions.empty()) {
-         static LRESULT stickyRetVal = MirrorHook::WndProc::WndProcHook_NoReturn;
-         for (WNDPROC wndProcExtender : extensions) {
-            static LRESULT retVal;
-            if (retVal = wndProcExtender(hWnd, uMsg, wParam, lParam) != MirrorHook::WndProc::WndProcHook_NoReturn)
-               stickyRetVal = retVal;
-         }
-         if (stickyRetVal != MirrorHook::WndProc::WndProcHook_NoReturn) {
-            LRESULT ret = stickyRetVal;
-            stickyRetVal = MirrorHook::WndProc::WndProcHook_NoReturn;
-            return ret;
-         }
+  LRESULT CALLBACK hkWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+    if (!extensions.empty()) {
+      static LRESULT stickyRetVal = MirrorHook::WndProc::WndProcHook_NoReturn;
+      for (WNDPROC wndProcExtender : extensions) {
+        static LRESULT retVal;
+        if (retVal = wndProcExtender(hWnd, uMsg, wParam, lParam) !=
+                     MirrorHook::WndProc::WndProcHook_NoReturn)
+          stickyRetVal = retVal;
       }
-      return CallWindowProc(origWndProc, hWnd, uMsg, wParam, lParam);
-   }
+      if (stickyRetVal != MirrorHook::WndProc::WndProcHook_NoReturn) {
+        LRESULT ret  = stickyRetVal;
+        stickyRetVal = MirrorHook::WndProc::WndProcHook_NoReturn;
+        return ret;
+      }
+    }
+    return CallWindowProc(origWndProc, hWnd, uMsg, wParam, lParam);
+  }
 
-   void __stdcall AddExtension(LPVOID extensionAddress) {
-   #pragma ExportedFunction
-      wndMutex.lock();
-      extensions.push_back(reinterpret_cast<WNDPROC>(extensionAddress));
-      wndMutex.unlock();
-   }
-   HWND __stdcall GetWindowHandle() {
-   #pragma ExportedFunction
-      return windowHandle;
-   }
+  void __stdcall AddExtension(LPVOID extensionAddress) {
+#pragma ExportedFunction
+    wndMutex.lock();
+    extensions.push_back(reinterpret_cast<WNDPROC>(extensionAddress));
+    wndMutex.unlock();
+  }
+  HWND __stdcall GetWindowHandle() {
+#pragma ExportedFunction
+    return windowHandle;
+  }
 
-   void Init(HWND* pWindowHandle) {
-      windowHandle = *pWindowHandle;
-      origWndProc  = (WNDPROC)SetWindowLongPtr(windowHandle, GWLP_WNDPROC, (LONG_PTR)&hkWndProc);
-   }
-}
+  void Init(HWND* pWindowHandle) {
+    windowHandle = *pWindowHandle;
+    origWndProc  = (WNDPROC)SetWindowLongPtr(windowHandle, GWLP_WNDPROC, (LONG_PTR)&hkWndProc);
+  }
+}  // namespace MirrorHookInternals::WndProcExtender

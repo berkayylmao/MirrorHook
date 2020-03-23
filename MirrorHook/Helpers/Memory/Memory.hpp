@@ -2,7 +2,8 @@
    The MIT License (MIT)
 
    Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
-       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578',
+   'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -27,41 +28,39 @@
 #include "stdafx.h"
 
 namespace Helpers::Memory {
-   struct MemoryAccessInfo {
-      DWORD     oldMemoryAccess;
-      int32_t   size;
+  struct MemoryAccessInfo {
+    DWORD   oldMemoryAccess;
+    int32_t size;
 
-      MemoryAccessInfo() = default;
-      MemoryAccessInfo(int32_t _size) : oldMemoryAccess(NULL) {
-         size = _size;
-      }
-   };
-   static inline std::map<DWORD_PTR, MemoryAccessInfo> _accessMap;
-   static inline std::mutex                            _memoryMutex;
+    MemoryAccessInfo() = default;
+    MemoryAccessInfo(int32_t _size) : oldMemoryAccess(NULL) { size = _size; }
+  };
+  static inline std::map<DWORD_PTR, MemoryAccessInfo> _accessMap;
+  static inline std::mutex                            _memoryMutex;
 
-   static void openMemoryAccess(const DWORD_PTR address, const int size) {
-      MemoryAccessInfo mA(size);
-      VirtualProtect((LPVOID)address, size, PAGE_EXECUTE_READWRITE, &mA.oldMemoryAccess);
+  static void openMemoryAccess(const DWORD_PTR address, const int size) {
+    MemoryAccessInfo mA(size);
+    VirtualProtect((LPVOID)address, size, PAGE_EXECUTE_READWRITE, &mA.oldMemoryAccess);
 
-      _memoryMutex.lock();
-      _accessMap.insert(std::make_pair(address, mA));
-      _memoryMutex.unlock();
-   }
-   static void restoreMemoryAccess(const DWORD_PTR address) {
-      MemoryAccessInfo* pMA = &_accessMap[address];
-      VirtualProtect((LPVOID)address, pMA->size, pMA->oldMemoryAccess, &pMA->oldMemoryAccess);
-      pMA = nullptr;
+    _memoryMutex.lock();
+    _accessMap.insert(std::make_pair(address, mA));
+    _memoryMutex.unlock();
+  }
+  static void restoreMemoryAccess(const DWORD_PTR address) {
+    MemoryAccessInfo* pMA = &_accessMap[address];
+    VirtualProtect((LPVOID)address, pMA->size, pMA->oldMemoryAccess, &pMA->oldMemoryAccess);
+    pMA = nullptr;
 
-      _memoryMutex.lock();
-      _accessMap.erase(address);
-      _memoryMutex.unlock();
-   }
+    _memoryMutex.lock();
+    _accessMap.erase(address);
+    _memoryMutex.unlock();
+  }
 
-   static void writeJMP(const DWORD_PTR from, const DWORD_PTR to) {
-      DWORD32 relativeAddress = to - from - 0x5;
-      openMemoryAccess(from, 5);
-      *(BYTE*)(from) = 0xE9;
-      *(DWORD32*)(from + 0x1) = relativeAddress;
-      restoreMemoryAccess(from);
-   }
-}
+  static void writeJMP(const DWORD_PTR from, const DWORD_PTR to) {
+    DWORD32 relativeAddress = to - from - 0x5;
+    openMemoryAccess(from, 5);
+    *(BYTE*)(from)          = 0xE9;
+    *(DWORD32*)(from + 0x1) = relativeAddress;
+    restoreMemoryAccess(from);
+  }
+}  // namespace Helpers::Memory

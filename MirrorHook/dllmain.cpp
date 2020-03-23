@@ -2,7 +2,8 @@
    The MIT License (MIT)
 
    Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
-       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578',
+   'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -28,137 +29,146 @@
 #include "Helpers/D3D11/D3D11Extender.hpp"
 
 namespace MirrorHookInternals {
-   std::mutex            initMutex;
-   bool                  bStopWaitingAutoInit = false;
-   MirrorHook::Framework installedFramework   = MirrorHook::Framework::None;
+  std::mutex            initMutex;
+  bool                  bStopWaitingAutoInit = false;
+  MirrorHook::Framework installedFramework   = MirrorHook::Framework::None;
 
-   bool __stdcall IsShowingInfoOverlay() {
-   #pragma ExportedFunction
-      if (installedFramework == MirrorHook::Framework::D3D11)
-         return (D3D11Extender::infoOverlayFrame < D3D11Extender::infoOverlayFrame_MaxFrame);
-      else
-         return (D3D9Extender::infoOverlayFrame < D3D9Extender::infoOverlayFrame_MaxFrame);
-   }
+  bool __stdcall IsShowingInfoOverlay() {
+#pragma ExportedFunction
+    if (installedFramework == MirrorHook::Framework::D3D11)
+      return (D3D11Extender::infoOverlayFrame < D3D11Extender::infoOverlayFrame_MaxFrame);
+    else
+      return (D3D9Extender::infoOverlayFrame < D3D9Extender::infoOverlayFrame_MaxFrame);
+  }
 
-   MirrorHook::Framework _stdcall GetInstalledFramework() {
-   #pragma ExportedFunction
-      return installedFramework;
-   }
+  MirrorHook::Framework _stdcall GetInstalledFramework() {
+#pragma ExportedFunction
+    return installedFramework;
+  }
 
-   bool __stdcall IsReady() {
-   #pragma ExportedFunction
-      return installedFramework != MirrorHook::Framework::None;
-   }
-   bool __stdcall IsReady_WaitAutoInit() {
-   #pragma ExportedFunction
-      while (!bStopWaitingAutoInit)
-         Sleep(750);
+  bool __stdcall IsReady() {
+#pragma ExportedFunction
+    return installedFramework != MirrorHook::Framework::None;
+  }
+  bool __stdcall IsReady_WaitAutoInit() {
+#pragma ExportedFunction
+    while (!bStopWaitingAutoInit) Sleep(750);
 
-      return installedFramework != MirrorHook::Framework::None;
-   }
+    return installedFramework != MirrorHook::Framework::None;
+  }
 
-   bool __stdcall PrepareForWithWindowTitleName(MirrorHook::Framework requestedFrameworkType, const TCHAR* const windowTitleName) {
-   #pragma ExportedFunction
-      initMutex.lock();
-      if (installedFramework == MirrorHook::Framework::None && windowTitleName) {
-         switch (requestedFrameworkType) {
-            case MirrorHook::Framework::D3D9:
-            {
-               if (D3D9Extender::Init(windowTitleName)) {
-                  installedFramework = MirrorHook::Framework::D3D9;
-                  MirrorHookInternals::bStopWaitingAutoInit = true;
-               }
-            }
-            break;
-            case MirrorHook::Framework::D3D11:
-            {
-               if (D3D11Extender::Init(windowTitleName)) {
-                  installedFramework = MirrorHook::Framework::D3D11;
-                  MirrorHookInternals::bStopWaitingAutoInit = true;
-               }
-            }
-            break;
-         }
+  bool __stdcall PrepareForWithWindowTitleName(MirrorHook::Framework requestedFrameworkType,
+                                               const TCHAR* const    windowTitleName) {
+#pragma ExportedFunction
+    initMutex.lock();
+    if (installedFramework == MirrorHook::Framework::None && windowTitleName) {
+      switch (requestedFrameworkType) {
+        case MirrorHook::Framework::D3D9: {
+          if (D3D9Extender::Init(windowTitleName)) {
+            installedFramework   = MirrorHook::Framework::D3D9;
+            bStopWaitingAutoInit = true;
+          }
+        } break;
+        case MirrorHook::Framework::D3D11: {
+          if (D3D11Extender::Init(windowTitleName)) {
+            installedFramework   = MirrorHook::Framework::D3D11;
+            bStopWaitingAutoInit = true;
+          }
+        } break;
       }
-      initMutex.unlock();
-      return IsReady();
-   }
-   bool __stdcall PrepareForWithWindowHandle(MirrorHook::Framework requestedFrameworkType, HWND* pWindowHandle) {
-   #pragma ExportedFunction
-      initMutex.lock();
-      if (installedFramework == MirrorHook::Framework::None && pWindowHandle) {
-         switch (requestedFrameworkType) {
-            case MirrorHook::Framework::D3D9:
-            {
-               if (D3D9Extender::Init(pWindowHandle)) {
-                  installedFramework = MirrorHook::Framework::D3D9;
-                  MirrorHookInternals::bStopWaitingAutoInit = true;
-               }
-            }
-            break;
-            case MirrorHook::Framework::D3D11:
-            {
-               if (D3D11Extender::Init(pWindowHandle)) {
-                  installedFramework = MirrorHook::Framework::D3D11;
-                  MirrorHookInternals::bStopWaitingAutoInit = true;
-               }
-            }
-            break;
-         }
+    }
+    initMutex.unlock();
+    return IsReady();
+  }
+  bool __stdcall PrepareForWithWindowHandle(MirrorHook::Framework requestedFrameworkType,
+                                            HWND*                 pWindowHandle) {
+#pragma ExportedFunction
+    initMutex.lock();
+    if (installedFramework == MirrorHook::Framework::None && pWindowHandle) {
+      switch (requestedFrameworkType) {
+        case MirrorHook::Framework::D3D9: {
+          if (D3D9Extender::Init(pWindowHandle)) {
+            installedFramework   = MirrorHook::Framework::D3D9;
+            bStopWaitingAutoInit = true;
+          }
+        } break;
+        case MirrorHook::Framework::D3D11: {
+          if (D3D11Extender::Init(pWindowHandle)) {
+            installedFramework   = MirrorHook::Framework::D3D11;
+            bStopWaitingAutoInit = true;
+          }
+        } break;
       }
-      initMutex.unlock();
-      return IsReady();
-   }
-}
+    }
+    initMutex.unlock();
+    return IsReady();
+  }
+  bool __stdcall PrepareForWithDevicePointer(MirrorHook::Framework requestedFrameworkType,
+                                             LPVOID*               ppDevice) {
+#pragma ExportedFunction
+    initMutex.lock();
+    if (installedFramework == MirrorHook::Framework::None && ppDevice) {
+      switch (requestedFrameworkType) {
+        case MirrorHook::Framework::D3D9: {
+          if (D3D9Extender::Init(reinterpret_cast<LPDIRECT3DDEVICE9*>(ppDevice))) {
+            installedFramework   = MirrorHook::Framework::D3D9;
+            bStopWaitingAutoInit = true;
+          }
+        } break;
+      }
+    }
+    initMutex.unlock();
+    return IsReady();
+  }
+}  // namespace MirrorHookInternals
 
-#pragma region Try Auto-Init
-uint32_t maxTryCount = 5;
-uint32_t curTryCount = 0;
+#pragma region Try Auto - Init
+uint32_t           maxTryCount = 5;
+uint32_t           curTryCount = 0;
 
 BOOL CALLBACK EnumWindowsCallback(HWND hwnd, LPARAM lParam) {
-   DWORD pId;
-   GetWindowThreadProcessId(hwnd, &pId);
-   if (GetCurrentProcessId() != pId)
-      return TRUE;
-   else {
-      *(HWND*)lParam = hwnd;
-      return FALSE;
-   }
+  DWORD pId;
+  GetWindowThreadProcessId(hwnd, &pId);
+  if (GetCurrentProcessId() != pId)
+    return TRUE;
+  else {
+    *(HWND*)lParam = hwnd;
+    return FALSE;
+  }
 }
 
-DWORD WINAPI Init(LPVOID) { // try to auto init
-   HWND hWnd = nullptr;
-   while (!hWnd) {
-      if (curTryCount == maxTryCount)
-         break;
+DWORD WINAPI Init(LPVOID) {  // try to auto init
+  HWND hWnd = nullptr;
+  while (!hWnd) {
+    if (curTryCount == maxTryCount) break;
 
-      EnumWindows(EnumWindowsCallback, (LPARAM)&hWnd);
-      Sleep(1000);
-      curTryCount++;
-   }
+    EnumWindows(EnumWindowsCallback, (LPARAM)&hWnd);
+    Sleep(1000);
+    curTryCount++;
+  }
 
-   if (MirrorHookInternals::installedFramework == MirrorHook::Framework::None && hWnd) { // in case MirrorHook was set up externally
-      MirrorHook::Framework requestedFramework = MirrorHook::Framework::None;
+  if (MirrorHookInternals::installedFramework == MirrorHook::Framework::None &&
+      hWnd) {  // in case MirrorHook was set up externally
+    MirrorHook::Framework requestedFramework = MirrorHook::Framework::None;
 
-      if (GetModuleHandle(TEXT("d3d9.dll"))) {
-         requestedFramework = MirrorHook::Framework::D3D9;
-      } else if (GetModuleHandle(TEXT("d3d11.dll"))) {
-         requestedFramework = MirrorHook::Framework::D3D11;
-      }
+    if (GetModuleHandle(TEXT("d3d9.dll"))) {
+      requestedFramework = MirrorHook::Framework::D3D9;
+    } else if (GetModuleHandle(TEXT("d3d11.dll"))) {
+      requestedFramework = MirrorHook::Framework::D3D11;
+    }
 
-      MirrorHookInternals::PrepareForWithWindowHandle(requestedFramework, &hWnd);
-   }
+    MirrorHookInternals::PrepareForWithWindowHandle(requestedFramework, &hWnd);
+  }
 
-   MirrorHookInternals::bStopWaitingAutoInit = true;
-   return TRUE;
+  MirrorHookInternals::bStopWaitingAutoInit = true;
+  return TRUE;
 }
 #pragma endregion
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID) {
-   if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-      DisableThreadLibraryCalls(hModule);
-      if (auto t = CreateThread(NULL, 0, &Init, NULL, 0, NULL))
-         CloseHandle(t);
-   }
-   return TRUE;
+  if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+    DisableThreadLibraryCalls(hModule);
+    if (auto t = CreateThread(NULL, 0, &Init, NULL, 0, NULL)) CloseHandle(t);
+  }
+  return TRUE;
 }

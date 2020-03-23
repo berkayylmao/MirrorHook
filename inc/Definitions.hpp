@@ -2,7 +2,8 @@
    The MIT License (MIT)
 
    Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
-       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578',
+   'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -32,102 +33,121 @@
 #pragma warning(pop)
 
 namespace MirrorHook {
-   enum class Framework {
-      None,
-      D3D9,
-      D3D11
-   };
+#ifndef _D3D9_H_
+  typedef LPVOID LPDIRECT3DDEVICE9;
+#endif
+#ifndef __d3d11_h__
+  typedef LPVOID ID3D11Device;
+  typedef LPVOID ID3D11DeviceContext;
+#endif
 
-   typedef bool(__stdcall* fn_PrepareFor_WindowTitle)(Framework, const TCHAR* const);
-   typedef bool(__stdcall* fn_PrepareFor_WindowHandle)(Framework, HWND*);
-   typedef Framework(__stdcall* fn_GetInstalledFrameWork)();
-   typedef bool(__stdcall* fn_NoParam_ReturnsBool)();
+  enum class Framework { None, D3D9, D3D11 };
 
-   constexpr bool __stdcall PrepareFor(Framework frameworkType, const TCHAR const* windowTitleName) {
-      return reinterpret_cast<fn_PrepareFor_WindowTitle>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::PrepareForWithWindowTitleName"))(frameworkType, windowTitleName);
-   }
-   constexpr bool __stdcall PrepareFor(Framework frameworkType, HWND* pWindowHandle) {
-      return reinterpret_cast<fn_PrepareFor_WindowHandle>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::PrepareForWithWindowHandle"))(frameworkType, pWindowHandle);
-   }
+  typedef bool(__stdcall* fn_PrepareFor_WindowTitle)(Framework, const TCHAR* const);
+  typedef bool(__stdcall* fn_PrepareFor_WindowHandle)(Framework, HWND*);
+  typedef bool(__stdcall* fn_PrepareFor_DevicePointer)(Framework, LPVOID*);
+  typedef Framework(__stdcall* fn_GetInstalledFrameWork)();
+  typedef bool(__stdcall* fn_NoParam_ReturnsBool)();
 
-   constexpr Framework __stdcall GetInstalledFramework() {
-      return reinterpret_cast<fn_GetInstalledFrameWork>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::GetInstalledFramework"))();
-   }
-   constexpr bool __stdcall IsShowingInfoOverlay() {
-      return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::IsShowingInfoOverlay"))();
-   }
-   constexpr bool __stdcall IsReady() {
-      return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::IsReady"))();
-   }
-   constexpr bool __stdcall WasAutoInitSuccessful() {
-      return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::IsReady_WaitAutoInit"))();
-   }
+  constexpr bool __stdcall PrepareFor(Framework frameworkType, const TCHAR const* windowTitleName) {
+    return reinterpret_cast<fn_PrepareFor_WindowTitle>(_Notnull_ GetProcAddress(
+        GetModuleHandle(TEXT("MirrorHook.dll")),
+        "MirrorHookInternals::PrepareForWithWindowTitleName"))(frameworkType, windowTitleName);
+  }
+  constexpr bool __stdcall PrepareFor(Framework frameworkType, HWND* pWindowHandle) {
+    return reinterpret_cast<fn_PrepareFor_WindowHandle>(_Notnull_ GetProcAddress(
+        GetModuleHandle(TEXT("MirrorHook.dll")),
+        "MirrorHookInternals::PrepareForWithWindowHandle"))(frameworkType, pWindowHandle);
+  }
+  constexpr bool __stdcall PrepareFor(Framework frameworkType, LPVOID* ppDevice) {
+    return reinterpret_cast<fn_PrepareFor_DevicePointer>(_Notnull_ GetProcAddress(
+        GetModuleHandle(TEXT("MirrorHook.dll")),
+        "MirrorHookInternals::PrepareForWithDevicePointer"))(frameworkType, ppDevice);
+  }
 
-   namespace D3D9 {
-      enum class D3D9Extension {
-         BeginScene,
-         EndScene,
-         BeforeReset,
-         AfterReset
-      };
+  constexpr Framework __stdcall GetInstalledFramework() {
+    return reinterpret_cast<fn_GetInstalledFrameWork>(_Notnull_ GetProcAddress(
+        GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::GetInstalledFramework"))();
+  }
+  constexpr bool __stdcall IsShowingInfoOverlay() {
+    return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(
+        GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::IsShowingInfoOverlay"))();
+  }
+  constexpr bool __stdcall IsReady() {
+    return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(
+        GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::IsReady"))();
+  }
+  constexpr bool __stdcall WasAutoInitSuccessful() {
+    return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(
+        GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::IsReady_WaitAutoInit"))();
+  }
 
-   #ifndef _D3D9_H_
-      typedef LPVOID LPDIRECT3DDEVICE9;
-   #endif
-      typedef HRESULT(__stdcall* fnAddExtension)(D3D9Extension extenderType, LPVOID extensionAddress);
-      typedef LPDIRECT3DDEVICE9(__stdcall* fnGetD3D9Device)();
+  namespace D3D9 {
+    enum class D3D9Extension { BeginScene, EndScene, BeforeReset, AfterReset };
 
-      constexpr HRESULT __stdcall AddExtension(D3D9Extension extensionType, LPVOID extensionAddress) {
-         return reinterpret_cast<fnAddExtension>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::AddExtension"))
-            (extensionType, extensionAddress);
-      }
-      constexpr LPDIRECT3DDEVICE9 __stdcall GetD3D9Device() {
-         return reinterpret_cast<fnGetD3D9Device>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::GetD3D9Device"))();
-      }
-      constexpr bool __stdcall IsReady() {
-         return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::IsReady"))();
-      }
-   }
-   namespace D3D11 {
-      enum class D3D11Extension {
-         Present
-      };
+    typedef HRESULT(__stdcall* fnAddExtension)(D3D9Extension extenderType, LPVOID extensionAddress);
+    typedef LPDIRECT3DDEVICE9(__stdcall* fnGetD3D9Device)();
 
-   #ifndef __d3d11_h__
-      typedef LPVOID ID3D11Device;
-      typedef LPVOID ID3D11DeviceContext;
-   #endif
-      typedef HRESULT(__stdcall* fnAddExtension)(D3D11Extension extenderType, LPVOID extensionAddress);
-      typedef ID3D11Device*(__stdcall* fnGetD3D11Device)();
-      typedef ID3D11DeviceContext*(__stdcall* fnGetD3D11DeviceContext)();
+    constexpr HRESULT __stdcall AddExtension(D3D9Extension extensionType, LPVOID extensionAddress) {
+      return reinterpret_cast<fnAddExtension>(_Notnull_ GetProcAddress(
+          GetModuleHandle(TEXT("MirrorHook.dll")),
+          "MirrorHookInternals::D3D9Extender::AddExtension"))(extensionType, extensionAddress);
+    }
+    constexpr LPDIRECT3DDEVICE9 __stdcall GetD3D9Device() {
+      return reinterpret_cast<fnGetD3D9Device>(
+          _Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")),
+                                   "MirrorHookInternals::D3D9Extender::GetD3D9Device"))();
+    }
+    constexpr bool __stdcall IsReady() {
+      return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(
+          GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::IsReady"))();
+    }
+  }  // namespace D3D9
+  namespace D3D11 {
+    enum class D3D11Extension { Present };
 
-      constexpr HRESULT __stdcall AddExtension(D3D11Extension extensionType, LPVOID extensionAddress) {
-         return reinterpret_cast<fnAddExtension>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::AddExtension"))
-            (extensionType, extensionAddress);
-      }
-      constexpr ID3D11Device* __stdcall GetD3D9Device() {
-         return reinterpret_cast<fnGetD3D11Device>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::GetD3D11Device"))();
-      }
-      constexpr ID3D11DeviceContext* __stdcall GetD3D11DeviceContext() {
-         return reinterpret_cast<fnGetD3D11DeviceContext>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::GetD3D11DeviceContext"))();
+    typedef HRESULT(__stdcall* fnAddExtension)(D3D11Extension extenderType,
+                                               LPVOID         extensionAddress);
+    typedef ID3D11Device*(__stdcall* fnGetD3D11Device)();
+    typedef ID3D11DeviceContext*(__stdcall* fnGetD3D11DeviceContext)();
 
-      }
-      constexpr bool __stdcall IsReady() {
-         return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::IsReady"))();
-      }
-   }
-   namespace WndProc {
-      constexpr LRESULT WndProcHook_NoReturn = -1;
-      typedef HRESULT(__stdcall* fnAddExtension)(LPVOID extensionAddress);
-      typedef HWND(__stdcall* fnGetWindowHandle)();
+    constexpr HRESULT __stdcall AddExtension(D3D11Extension extensionType,
+                                             LPVOID         extensionAddress) {
+      return reinterpret_cast<fnAddExtension>(_Notnull_ GetProcAddress(
+          GetModuleHandle(TEXT("MirrorHook.dll")),
+          "MirrorHookInternals::D3D11Extender::AddExtension"))(extensionType, extensionAddress);
+    }
+    constexpr ID3D11Device* __stdcall GetD3D9Device() {
+      return reinterpret_cast<fnGetD3D11Device>(
+          _Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")),
+                                   "MirrorHookInternals::D3D11Extender::GetD3D11Device"))();
+    }
+    constexpr ID3D11DeviceContext* __stdcall GetD3D11DeviceContext() {
+      return reinterpret_cast<fnGetD3D11DeviceContext>(
+          _Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")),
+                                   "MirrorHookInternals::D3D11Extender::GetD3D11DeviceContext"))();
+    }
+    constexpr bool __stdcall IsReady() {
+      return reinterpret_cast<fn_NoParam_ReturnsBool>(
+          _Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")),
+                                   "MirrorHookInternals::D3D11Extender::IsReady"))();
+    }
+  }  // namespace D3D11
+  namespace WndProc {
+    constexpr LRESULT WndProcHook_NoReturn = -1;
+    typedef HRESULT(__stdcall* fnAddExtension)(LPVOID extensionAddress);
+    typedef HWND(__stdcall* fnGetWindowHandle)();
 
-      constexpr HRESULT __stdcall AddExtension(LPVOID extensionAddress) {
-         return reinterpret_cast<fnAddExtension>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::WndProcExtender::AddExtension"))
-            (extensionAddress);
-      }
-      constexpr HWND __stdcall GetWindowHandle() {
-         return reinterpret_cast<fnGetWindowHandle>(_Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::WndProcExtender::GetWindowHandle"))();
-      }
-   }
-}
+    constexpr HRESULT __stdcall AddExtension(LPVOID extensionAddress) {
+      return reinterpret_cast<fnAddExtension>(_Notnull_ GetProcAddress(
+          GetModuleHandle(TEXT("MirrorHook.dll")),
+          "MirrorHookInternals::WndProcExtender::AddExtension"))(extensionAddress);
+    }
+    constexpr HWND __stdcall GetWindowHandle() {
+      return reinterpret_cast<fnGetWindowHandle>(
+          _Notnull_ GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")),
+                                   "MirrorHookInternals::WndProcExtender::GetWindowHandle"))();
+    }
+  }  // namespace WndProc
+}  // namespace MirrorHook
 #endif

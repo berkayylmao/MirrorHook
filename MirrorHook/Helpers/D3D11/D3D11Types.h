@@ -1,8 +1,9 @@
 /*
    The MIT License (MIT)
-   
+
    Copyright (c) 2020 Berkay Yigit <berkaytgy@gmail.com>
-       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578', 'berkayylmao'.
+       Copyright holder detail: Nickname(s) used by the copyright holder: 'berkay2578',
+   'berkayylmao'.
 
    Permission is hereby granted, free of charge, to any person obtaining a copy
    of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +31,10 @@
 #pragma warning(pop)
 
 namespace D3D11Types {
-   typedef HRESULT(__stdcall* Present_t)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
-   typedef void(__stdcall* CreateQuery_t)(ID3D11Device* pDevice, const D3D11_QUERY_DESC* pQueryDesc, ID3D11Query** ppQuery);
-   typedef void(__stdcall* PSSetShaderResources_t)(ID3D11DeviceContext* pContext, UINT StartSlot, UINT NumViews, ID3D11ShaderResourceView* const* ppShaderResourceViews);
-}
+  typedef HRESULT(__stdcall* Present_t)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
+  typedef void(__stdcall* CreateQuery_t)(ID3D11Device* pDevice, const D3D11_QUERY_DESC* pQueryDesc,
+                                         ID3D11Query** ppQuery);
+  typedef void(__stdcall* PSSetShaderResources_t)(
+      ID3D11DeviceContext* pContext, UINT StartSlot, UINT NumViews,
+      ID3D11ShaderResourceView* const* ppShaderResourceViews);
+}  // namespace D3D11Types
