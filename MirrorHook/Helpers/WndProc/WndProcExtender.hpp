@@ -38,8 +38,7 @@ namespace MirrorHookInternals::WndProcExtender {
     if (!extensions.empty()) {
       static LRESULT stickyRetVal = MirrorHook::WndProc::WndProcHook_NoReturn;
       for (WNDPROC wndProcExtender : extensions) {
-        LRESULT retVal = wndProcExtender(hWnd, uMsg, wParam, lParam);
-        if (retVal != MirrorHook::WndProc::WndProcHook_NoReturn) stickyRetVal = retVal;
+        stickyRetVal &= wndProcExtender(hWnd, uMsg, wParam, lParam);
       }
       if (stickyRetVal != MirrorHook::WndProc::WndProcHook_NoReturn) {
         LRESULT ret  = stickyRetVal;
