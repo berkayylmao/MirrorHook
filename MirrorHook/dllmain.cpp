@@ -113,14 +113,24 @@ namespace MirrorHookInternals {
 uint32_t           maxTryCount = 5;
 uint32_t           curTryCount = 0;
 
-BOOL CALLBACK EnumWindowsCallback(HWND hwnd, LPARAM lParam) {
-  DWORD pId;
-  GetWindowThreadProcessId(hwnd, &pId);
+BOOL CALLBACK EnumWindowsCallback(HWND hWnd, LPARAM lParam) {
+  static DWORD pId;
+  static TCHAR szClassName[MAX_PATH];
+  GetWindowThreadProcessId(hWnd, &pId);
   if (GetCurrentProcessId() != pId)
     return TRUE;
   else {
-    *(HWND*)lParam = hwnd;
-    return FALSE;
+    if (GetClassName(hWnd, szClassName, _countof(szClassName))) {
+#ifdef UNICODE
+      if (wcscmp(szClassName, L"UnityWndClass") == 0) {
+#else
+      if (strcmp(szClassName, "UnityWndClass") == 0) {
+#endif
+        *(HWND*)lParam = hWnd;
+        return FALSE;
+      }
+      return TRUE;
+    }
   }
 }
 
