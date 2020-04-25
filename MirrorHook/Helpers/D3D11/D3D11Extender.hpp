@@ -28,7 +28,7 @@
 
 #include "stdafx.h"
 #include "Helpers/D3D11/D3D11Types.h"
-#include "Helpers/Memory/VTableHook.hpp"
+#include "Helpers/Memory/DetourHook.hpp"
 #include "Helpers/WndProc/WndProcExtender.hpp"
 #include "Helpers/Dear ImGui/imgui.h"
 #include "Helpers/Dear ImGui/Implementations/imgui_impl_dx11.h"
@@ -48,34 +48,31 @@ namespace MirrorHookInternals {
     bool           isExtenderReady = false;
     std::once_flag isExtenderReadyLock;
     bool           useImGui                  = true;
-    bool           isImGuiReady              = false;
     uint32_t       infoOverlayFrame          = 0;
-    uint32_t       infoOverlayFrame_MaxFrame = 300;
+    uint32_t       infoOverlayFrame_MaxFrame = 500;
 
 #pragma region function hooks
-    std::unique_ptr<Helpers::VTableHook> dxgiSwapChainHook = nullptr;
-    D3D11Types::Present_t                origPresent       = nullptr;
+    std::unique_ptr<Helpers::DetourHook> dxgiSwapChainDetourHook = nullptr;
+    D3D11Types::Present_t                origPresent             = nullptr;
 
     HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
-      if (useImGui && !isImGuiReady) {
-        std::call_once(isExtenderReadyLock, [&]() {
-          pSwapChain->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
-          pD3DDevice->GetImmediateContext(&pD3DDeviceContext);
+      std::call_once(isExtenderReadyLock, [&]() {
+        pSwapChain->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
+        pD3DDevice->GetImmediateContext(&pD3DDeviceContext);
 
-          // Remove these if they cause issues
-          ID3D11Texture2D* renderTargetTexture = nullptr;
-          if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
-                                              reinterpret_cast<LPVOID*>(&renderTargetTexture)))) {
-            pD3DDevice->CreateRenderTargetView(renderTargetTexture, NULL, &pRenderTargetView);
-            renderTargetTexture->Release();
-          }
+        ID3D11Texture2D* renderTargetTexture = nullptr;
+        if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
+                                            reinterpret_cast<LPVOID*>(&renderTargetTexture)))) {
+          pD3DDevice->CreateRenderTargetView(renderTargetTexture, NULL, &pRenderTargetView);
+          renderTargetTexture->Release();
+        }
 
+        if (useImGui) {
           ImGui::CreateContext();
           ImGui_ImplDX11::Init(pD3DDevice, pD3DDeviceContext);
           ImGui_ImplWin32_Init(windowHandle);
-          isImGuiReady = true;
-        });
-      }
+        }
+      });
 
       pD3DDeviceContext->OMSetRenderTargets(1, &pRenderTargetView, NULL);
       if (!vPresentExtensions.empty()) {
@@ -84,7 +81,7 @@ namespace MirrorHookInternals {
         }
       }
 
-      if (useImGui && isImGuiReady && infoOverlayFrame < infoOverlayFrame_MaxFrame) {
+      if (useImGui && infoOverlayFrame < infoOverlayFrame_MaxFrame) {
         ImGui_ImplDX11::NewFrame();
         ImGui_ImplWin32_NewFrame();
         ImGui::NewFrame();
@@ -103,24 +100,28 @@ namespace MirrorHookInternals {
           { ImGui::Text("Present extensions: %d", vPresentExtensions.size()); }
           ImGui::Unindent(5.0f);
 
-          if (infoOverlayFrame_MaxFrame != -1) {
-            ImGui::Separator();
-            ImGui::Text("I will disappear in... %04u.",
-                        infoOverlayFrame_MaxFrame - infoOverlayFrame);
+          ImGui::Separator();
+          ImGui::Text("I will disappear in... %04u.", infoOverlayFrame_MaxFrame - infoOverlayFrame);
 
-            infoOverlayFrame++;
-            ImGui::End();
-            ImGui::Render();
-            ImGui_ImplDX11::RenderDrawData(ImGui::GetDrawData());
-            useImGui = false;
-            return origPresent(pSwapChain, SyncInterval, Flags);
-          }
+          infoOverlayFrame++;
+          useImGui = (infoOverlayFrame < infoOverlayFrame_MaxFrame);
         }
         ImGui::End();
         ImGui::Render();
         ImGui_ImplDX11::RenderDrawData(ImGui::GetDrawData());
+
+        if (!useImGui) {
+          ImGui_ImplWin32_Shutdown();
+          ImGui_ImplDX11::Shutdown();
+          ImGui::DestroyContext();
+        }
       }
-      return origPresent(pSwapChain, SyncInterval, Flags);
+
+      auto* pDI = dxgiSwapChainDetourHook->GetInfoOf(origPresent);
+      pDI->Unhook();
+      auto ret = origPresent(pSwapChain, SyncInterval, Flags);
+      pDI->Hook();
+      return ret;
     }
 #pragma endregion
 
@@ -182,12 +183,22 @@ namespace MirrorHookInternals {
                                                &obtainedLevel, &pD3DDeviceContext)))
         return false;
 
-      dxgiSwapChainHook = std::make_unique<Helpers::VTableHook>((PDWORD_PTR*)pFakeSwapChain);
-      origPresent       = dxgiSwapChainHook->Hook(8, hkPresent);
+      DWORD_PTR* vtDevice     = *(PDWORD_PTR*)pFakeSwapChain;
+      dxgiSwapChainDetourHook = std::make_unique<Helpers::DetourHook>();
+      origPresent             = dxgiSwapChainDetourHook->Hook(vtDevice[8], hkPresent);
 
-      isExtenderReady = origPresent != nullptr;
-      if (isExtenderReady) WndProcExtender::Init(pWindowHandle);
-      return isExtenderReady;
+      // Some applications return the real swap chain
+      // pFakeSwapChain->Release();
+      pD3DDevice->Release();
+      pD3DDeviceContext->Release();
+
+      pFakeSwapChain    = nullptr;
+      pD3DDevice        = nullptr;
+      pD3DDeviceContext = nullptr;
+
+      WndProcExtender::Init(pWindowHandle);
+      isExtenderReady = true;
+      return true;
     }
     bool Init(const TCHAR* const windowTitleName) {
       if (windowHandle = FindWindow(0, windowTitleName)) return Init(&windowHandle);

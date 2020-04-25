@@ -33,19 +33,6 @@ namespace MirrorHookInternals {
   bool                  bStopWaitingAutoInit = false;
   MirrorHook::Framework installedFramework   = MirrorHook::Framework::None;
 
-  bool __stdcall IsShowingInfoOverlay() {
-#pragma ExportedFunction
-    if (installedFramework == MirrorHook::Framework::D3D11)
-      return (D3D11Extender::infoOverlayFrame < D3D11Extender::infoOverlayFrame_MaxFrame);
-    else
-      return (D3D9Extender::infoOverlayFrame < D3D9Extender::infoOverlayFrame_MaxFrame);
-  }
-
-  MirrorHook::Framework _stdcall GetInstalledFramework() {
-#pragma ExportedFunction
-    return installedFramework;
-  }
-
   bool __stdcall IsReady() {
 #pragma ExportedFunction
     return installedFramework != MirrorHook::Framework::None;
@@ -61,7 +48,7 @@ namespace MirrorHookInternals {
                                                const TCHAR* const    windowTitleName) {
 #pragma ExportedFunction
     initMutex.lock();
-    if (installedFramework == MirrorHook::Framework::None && windowTitleName) {
+    if (windowTitleName) {
       switch (requestedFrameworkType) {
         case MirrorHook::Framework::D3D9: {
           if (D3D9Extender::Init(windowTitleName)) {
@@ -84,7 +71,7 @@ namespace MirrorHookInternals {
                                             HWND*                 pWindowHandle) {
 #pragma ExportedFunction
     initMutex.lock();
-    if (installedFramework == MirrorHook::Framework::None && pWindowHandle) {
+    if (pWindowHandle) {
       switch (requestedFrameworkType) {
         case MirrorHook::Framework::D3D9: {
           if (D3D9Extender::Init(pWindowHandle)) {
@@ -107,7 +94,7 @@ namespace MirrorHookInternals {
                                              LPVOID*               ppDevice) {
 #pragma ExportedFunction
     initMutex.lock();
-    if (installedFramework == MirrorHook::Framework::None && ppDevice) {
+    if (ppDevice) {
       switch (requestedFrameworkType) {
         case MirrorHook::Framework::D3D9: {
           if (D3D9Extender::Init(reinterpret_cast<LPDIRECT3DDEVICE9*>(ppDevice))) {
@@ -149,15 +136,12 @@ DWORD WINAPI Init(LPVOID) {  // try to auto init
 
   if (MirrorHookInternals::installedFramework == MirrorHook::Framework::None &&
       hWnd) {  // in case MirrorHook was set up externally
-    MirrorHook::Framework requestedFramework = MirrorHook::Framework::None;
-
     if (GetModuleHandle(TEXT("d3d9.dll"))) {
-      requestedFramework = MirrorHook::Framework::D3D9;
-    } else if (GetModuleHandle(TEXT("d3d11.dll"))) {
-      requestedFramework = MirrorHook::Framework::D3D11;
+      MirrorHookInternals::PrepareForWithWindowHandle(MirrorHook::Framework::D3D9, &hWnd);
     }
-
-    MirrorHookInternals::PrepareForWithWindowHandle(requestedFramework, &hWnd);
+    if (GetModuleHandle(TEXT("d3d11.dll"))) {
+      MirrorHookInternals::PrepareForWithWindowHandle(MirrorHook::Framework::D3D11, &hWnd);
+    }
   }
 
   MirrorHookInternals::bStopWaitingAutoInit = true;

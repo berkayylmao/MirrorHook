@@ -70,19 +70,20 @@ namespace MirrorHookInternals {
           }
         }
 
-        if (useImGui && !isImGuiReady) {
-          if (d3dDevice == nullptr) d3dDevice = pDevice;
+        if (useImGui) {
+          if (!isImGuiReady) {
+            if (d3dDevice == nullptr) d3dDevice = pDevice;
 
-          ImGui::CreateContext();
-          ImGui_ImplDX9::Init(pDevice);
-          ImGui_ImplWin32_Init(windowHandle);
+            ImGui::CreateContext();
+            ImGui_ImplDX9::Init(pDevice);
+            ImGui_ImplWin32_Init(windowHandle);
 
-          isImGuiReady = true;
-        }
-        if (useImGui && isImGuiReady) {
-          ImGui_ImplDX9::NewFrame();
-          ImGui_ImplWin32_NewFrame();
-          ImGui::NewFrame();
+            isImGuiReady = true;
+          } else {
+            ImGui_ImplDX9::NewFrame();
+            ImGui_ImplWin32_NewFrame();
+            ImGui::NewFrame();
+          }
         }
       }
 
@@ -92,7 +93,7 @@ namespace MirrorHookInternals {
       } else {
         auto* pDI = d3dDeviceDetourHook->GetInfoOf(origBeginScene);
         pDI->Unhook();
-        auto ret = origBeginScene(pDevice);
+        ret = origBeginScene(pDevice);
         pDI->Hook();
       }
       return ret;
@@ -104,6 +105,7 @@ namespace MirrorHookInternals {
             if (endSceneExtension) endSceneExtension(pDevice);
           }
         }
+
         if (useImGui && isImGuiReady && infoOverlayFrame < infoOverlayFrame_MaxFrame) {
           ImGui::SetNextWindowPos(ImVec2(10.0f, 40.0f), ImGuiCond_Once);
           if (ImGui::Begin("##MirrorHook", nullptr,
@@ -134,6 +136,12 @@ namespace MirrorHookInternals {
           ImGui::End();
           ImGui::Render();
           ImGui_ImplDX9::RenderDrawData(ImGui::GetDrawData());
+
+          if (!useImGui) {
+            ImGui_ImplWin32_Shutdown();
+            ImGui_ImplDX9::Shutdown();
+            ImGui::DestroyContext();
+          }
         }
       }
 
@@ -156,7 +164,7 @@ namespace MirrorHookInternals {
         }
       }
 
-      if (isImGuiReady) ImGui_ImplDX9::InvalidateDeviceObjects();
+      if (useImGui && isImGuiReady) ImGui_ImplDX9::InvalidateDeviceObjects();
 
       HRESULT ret = D3D_OK;
       if (isUsingVTableHook) {
@@ -164,7 +172,7 @@ namespace MirrorHookInternals {
       } else {
         auto* pDI = d3dDeviceDetourHook->GetInfoOf(origReset);
         pDI->Unhook();
-        auto ret = origReset(pDevice, pPresentationParameters);
+        ret = origReset(pDevice, pPresentationParameters);
         pDI->Hook();
       }
 
@@ -174,7 +182,7 @@ namespace MirrorHookInternals {
         }
       }
 
-      if (isImGuiReady) ImGui_ImplDX9::CreateDeviceObjects();
+      if (useImGui && isImGuiReady) ImGui_ImplDX9::CreateDeviceObjects();
 
       return ret;
     }

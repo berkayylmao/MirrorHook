@@ -46,7 +46,6 @@ namespace MirrorHook {
   typedef bool(__stdcall* fn_PrepareFor_WindowTitle)(Framework, const TCHAR* const);
   typedef bool(__stdcall* fn_PrepareFor_WindowHandle)(Framework, HWND*);
   typedef bool(__stdcall* fn_PrepareFor_DevicePointer)(Framework, LPVOID*);
-  typedef Framework(__stdcall* fn_GetInstalledFrameWork)();
   typedef bool(__stdcall* fn_NoParam_ReturnsBool)();
 
   constexpr bool __stdcall PrepareFor(Framework frameworkType, const TCHAR const* windowTitleName) {
@@ -65,14 +64,6 @@ namespace MirrorHook {
         "MirrorHookInternals::PrepareForWithDevicePointer"))(frameworkType, ppDevice);
   }
 
-  constexpr Framework __stdcall GetInstalledFramework() {
-    return reinterpret_cast<fn_GetInstalledFrameWork>(_Notnull_ GetProcAddress(
-        GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::GetInstalledFramework"))();
-  }
-  constexpr bool __stdcall IsShowingInfoOverlay() {
-    return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(
-        GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::IsShowingInfoOverlay"))();
-  }
   constexpr bool __stdcall IsReady() {
     return reinterpret_cast<fn_NoParam_ReturnsBool>(_Notnull_ GetProcAddress(
         GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::IsReady"))();

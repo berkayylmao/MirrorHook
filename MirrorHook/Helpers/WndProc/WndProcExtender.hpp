@@ -26,6 +26,7 @@
 
 #pragma once
 #include "stdafx.h"
+#include <string>
 
 namespace MirrorHookInternals::WndProcExtender {
   std::mutex wndMutex;
@@ -37,10 +38,8 @@ namespace MirrorHookInternals::WndProcExtender {
     if (!extensions.empty()) {
       static LRESULT stickyRetVal = MirrorHook::WndProc::WndProcHook_NoReturn;
       for (WNDPROC wndProcExtender : extensions) {
-        static LRESULT retVal;
-        if (retVal = wndProcExtender(hWnd, uMsg, wParam, lParam) !=
-                     MirrorHook::WndProc::WndProcHook_NoReturn)
-          stickyRetVal = retVal;
+        LRESULT retVal = wndProcExtender(hWnd, uMsg, wParam, lParam);
+        if (retVal != MirrorHook::WndProc::WndProcHook_NoReturn) stickyRetVal = retVal;
       }
       if (stickyRetVal != MirrorHook::WndProc::WndProcHook_NoReturn) {
         LRESULT ret  = stickyRetVal;
@@ -62,7 +61,9 @@ namespace MirrorHookInternals::WndProcExtender {
   }
 
   void Init(HWND* pWindowHandle) {
-    windowHandle = *pWindowHandle;
-    origWndProc  = (WNDPROC)SetWindowLongPtr(windowHandle, GWLP_WNDPROC, (LONG_PTR)&hkWndProc);
+    if (!origWndProc) {
+      windowHandle = *pWindowHandle;
+      origWndProc  = (WNDPROC)SetWindowLongPtr(windowHandle, GWLP_WNDPROC, (LONG_PTR)&hkWndProc);
+    }
   }
 }  // namespace MirrorHookInternals::WndProcExtender
