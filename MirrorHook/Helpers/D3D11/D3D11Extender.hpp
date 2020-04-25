@@ -45,36 +45,28 @@ namespace MirrorHookInternals {
     HWND                               windowHandle      = nullptr;
     std::vector<D3D11Types::Present_t> vPresentExtensions;
 
-    bool           isExtenderReady = false;
-    std::once_flag isExtenderReadyLock;
-    bool           useImGui                  = true;
-    uint32_t       infoOverlayFrame          = 0;
-    uint32_t       infoOverlayFrame_MaxFrame = 500;
+    bool     isExtenderReady           = false;
+    bool     useImGui                  = true;
+    uint32_t infoOverlayFrame          = 0;
+    uint32_t infoOverlayFrame_MaxFrame = 500;
 
 #pragma region function hooks
     std::unique_ptr<Helpers::DetourHook> dxgiSwapChainDetourHook = nullptr;
     D3D11Types::Present_t                origPresent             = nullptr;
 
     HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
-      std::call_once(isExtenderReadyLock, [&]() {
+      if (!isExtenderReady) {
         pSwapChain->GetDevice(__uuidof(pD3DDevice), reinterpret_cast<void**>(&pD3DDevice));
         pD3DDevice->GetImmediateContext(&pD3DDeviceContext);
-
-        ID3D11Texture2D* renderTargetTexture = nullptr;
-        if (SUCCEEDED(pSwapChain->GetBuffer(0, __uuidof(ID3D11Texture2D),
-                                            reinterpret_cast<LPVOID*>(&renderTargetTexture)))) {
-          pD3DDevice->CreateRenderTargetView(renderTargetTexture, NULL, &pRenderTargetView);
-          renderTargetTexture->Release();
-        }
 
         if (useImGui) {
           ImGui::CreateContext();
           ImGui_ImplDX11::Init(pD3DDevice, pD3DDeviceContext);
           ImGui_ImplWin32_Init(windowHandle);
         }
-      });
+        isExtenderReady = true;
+      }
 
-      pD3DDeviceContext->OMSetRenderTargets(1, &pRenderTargetView, NULL);
       if (!vPresentExtensions.empty()) {
         for (auto& presentExtension : vPresentExtensions) {
           if (presentExtension) presentExtension(pSwapChain, SyncInterval, Flags);
@@ -128,13 +120,13 @@ namespace MirrorHookInternals {
 #pragma region exported helpers
     ID3D11Device* __stdcall GetD3D11Device() {
 #pragma ExportedFunction
-      if (isExtenderReady) return nullptr;
+      if (!isExtenderReady) return nullptr;
 
       return pD3DDevice;
     }
     ID3D11DeviceContext* __stdcall GetD3D11DeviceContext() {
 #pragma ExportedFunction
-      if (isExtenderReady) return nullptr;
+      if (!isExtenderReady) return nullptr;
 
       return pD3DDeviceContext;
     }
@@ -164,16 +156,14 @@ namespace MirrorHookInternals {
       D3D_FEATURE_LEVEL    obtainedLevel;
       DXGI_SWAP_CHAIN_DESC sd;
       {
-        ZeroMemory(&sd, sizeof(sd));
         sd.BufferCount       = 1;
         sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
         sd.BufferUsage       = DXGI_USAGE_RENDER_TARGET_OUTPUT;
         sd.OutputWindow      = windowHandle;
         sd.SampleDesc.Count  = 1;
-        sd.Windowed = ((GetWindowLongPtrA(windowHandle, GWL_STYLE) & WS_POPUP) != 0) ? false : true;
-        sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-        sd.BufferDesc.Scaling          = DXGI_MODE_SCALING_UNSPECIFIED;
-        sd.SwapEffect                  = DXGI_SWAP_EFFECT_DISCARD;
+        sd.Windowed          = TRUE;
+        sd.SwapEffect        = DXGI_SWAP_EFFECT_DISCARD;
+        sd.Flags             = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
       }
 
       IDXGISwapChain* pFakeSwapChain;
@@ -187,8 +177,7 @@ namespace MirrorHookInternals {
       dxgiSwapChainDetourHook = std::make_unique<Helpers::DetourHook>();
       origPresent             = dxgiSwapChainDetourHook->Hook(vtDevice[8], hkPresent);
 
-      // Some applications return the real swap chain
-      // pFakeSwapChain->Release();
+      pFakeSwapChain->Release();
       pD3DDevice->Release();
       pD3DDeviceContext->Release();
 
@@ -197,7 +186,6 @@ namespace MirrorHookInternals {
       pD3DDeviceContext = nullptr;
 
       WndProcExtender::Init(pWindowHandle);
-      isExtenderReady = true;
       return true;
     }
     bool Init(const TCHAR* const windowTitleName) {

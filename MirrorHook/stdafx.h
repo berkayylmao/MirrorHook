@@ -34,7 +34,7 @@
 
 #include <unordered_map>
 #include <vector>
-#include <mutex>   // std::mutex, std::call_once, std::once_flag
+#include <mutex>   // std::mutex
 #include <memory>  // std::unique_ptr, std::make_unique
 #pragma warning(pop)
 
