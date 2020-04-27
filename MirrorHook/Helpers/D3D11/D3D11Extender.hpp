@@ -61,6 +61,7 @@ namespace MirrorHookInternals {
 
         if (useImGui) {
           ImGui::CreateContext();
+          ImGui::GetIO().IniFilename = NULL;
           ImGui_ImplDX11::Init(pD3DDevice, pD3DDeviceContext);
           ImGui_ImplWin32_Init(windowHandle);
         }
