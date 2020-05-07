@@ -120,6 +120,7 @@ BOOL CALLBACK EnumWindowsCallback(HWND hWnd, LPARAM lParam) {
   if (GetCurrentProcessId() != pId)
     return TRUE;
   else {
+#ifdef __TARGET_IS_UNITY_WINDOW
     if (GetClassName(hWnd, szClassName, _countof(szClassName))) {
 #ifdef UNICODE
       if (wcscmp(szClassName, L"UnityWndClass") == 0) {
@@ -130,39 +131,41 @@ BOOL CALLBACK EnumWindowsCallback(HWND hWnd, LPARAM lParam) {
         return FALSE;
       }
       return TRUE;
-    }
-  }
-}
-
-DWORD WINAPI Init(LPVOID) {  // try to auto init
-  HWND hWnd = nullptr;
-  while (!hWnd) {
-    if (curTryCount == maxTryCount) break;
-
-    EnumWindows(EnumWindowsCallback, (LPARAM)&hWnd);
-    Sleep(1000);
-    curTryCount++;
-  }
-
-  if (MirrorHookInternals::installedFramework == MirrorHook::Framework::None &&
-      hWnd) {  // in case MirrorHook was set up externally
-    if (GetModuleHandle(TEXT("d3d9.dll"))) {
-      MirrorHookInternals::PrepareForWithWindowHandle(MirrorHook::Framework::D3D9, &hWnd);
-    }
-    if (GetModuleHandle(TEXT("d3d11.dll"))) {
-      MirrorHookInternals::PrepareForWithWindowHandle(MirrorHook::Framework::D3D11, &hWnd);
+#endif
+      *(HWND*)lParam = hWnd;
+      return FALSE;
     }
   }
 
-  MirrorHookInternals::bStopWaitingAutoInit = true;
-  return TRUE;
-}
+  DWORD WINAPI Init(LPVOID) {  // try to auto init
+    HWND hWnd = nullptr;
+    while (!hWnd) {
+      if (curTryCount == maxTryCount) break;
+
+      EnumWindows(EnumWindowsCallback, (LPARAM)&hWnd);
+      Sleep(1000);
+      curTryCount++;
+    }
+
+    if (MirrorHookInternals::installedFramework == MirrorHook::Framework::None &&
+        hWnd) {  // in case MirrorHook was set up externally
+      if (GetModuleHandle(TEXT("d3d9.dll"))) {
+        MirrorHookInternals::PrepareForWithWindowHandle(MirrorHook::Framework::D3D9, &hWnd);
+      }
+      if (GetModuleHandle(TEXT("d3d11.dll"))) {
+        MirrorHookInternals::PrepareForWithWindowHandle(MirrorHook::Framework::D3D11, &hWnd);
+      }
+    }
+
+    MirrorHookInternals::bStopWaitingAutoInit = true;
+    return TRUE;
+  }
 #pragma endregion
 
-BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID) {
-  if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
-    DisableThreadLibraryCalls(hModule);
-    if (auto t = CreateThread(NULL, 0, &Init, NULL, 0, NULL)) CloseHandle(t);
+  BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID) {
+    if (ul_reason_for_call == DLL_PROCESS_ATTACH) {
+      DisableThreadLibraryCalls(hModule);
+      if (auto t = CreateThread(NULL, 0, &Init, NULL, 0, NULL)) CloseHandle(t);
+    }
+    return TRUE;
   }
-  return TRUE;
-}

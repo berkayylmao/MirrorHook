@@ -80,7 +80,8 @@ namespace MirrorHookInternals {
             ImGui_ImplWin32_Init(windowHandle);
 
             isImGuiReady = true;
-          } else {
+          }
+          if (isImGuiReady) {
             ImGui_ImplDX9::NewFrame();
             ImGui_ImplWin32_NewFrame();
             ImGui::NewFrame();
