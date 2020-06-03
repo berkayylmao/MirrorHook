@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="default">
+      <UniqueIdentifier>{6fd2b156-9719-4314-9084-d02d78643eaa}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helpers">
+      <UniqueIdentifier>{97573e01-9f0c-4750-8c7d-3863ef3242eb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helpers">
+      <UniqueIdentifier>{254145d7-4f1a-4b4e-8d3d-bd2624a01a06}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helpers\D3D9">
+      <UniqueIdentifier>{f1d42127-df4e-4eb6-af76-e537e8f2b148}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helpers\D3D11">
+      <UniqueIdentifier>{846ccc64-a688-4ee4-8251-ddf4967f80be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helpers\WndProc">
+      <UniqueIdentifier>{3b5d6179-56a6-413c-8254-95e09c34ff89}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helpers\MemoryEditor">
+      <UniqueIdentifier>{e5e02906-ab45-4d60-922a-06f0c95cec7f}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="resource.h">
+      <Filter>default</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers\D3D11\D3D11Extender.hpp">
+      <Filter>Helpers\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers\D3D9\D3D9Extender.hpp">
+      <Filter>Helpers\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers\WndProc\WndProcExtender.hpp">
+      <Filter>Helpers\WndProc</Filter>
+    </ClInclude>
+    <ClInclude Include="pch.h">
+      <Filter>default</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers\D3D9\D3D9Def.h">
+      <Filter>Helpers\D3D9</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers\D3D11\D3D11Def.h">
+      <Filter>Helpers\D3D11</Filter>
+    </ClInclude>
+    <ClInclude Include="Helpers\MemoryEditor\MemoryEditor.hpp">
+      <Filter>Helpers\MemoryEditor</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="pch.cpp">
+      <Filter>default</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="version.rc">
+      <Filter>default</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Helpers\MemoryEditor\MemoryEditor.licenseheader">
+      <Filter>Helpers\MemoryEditor</Filter>
+    </None>
+    <None Include="MirrorHook.licenseheader" />
+  </ItemGroup>
+</Project>
