@@ -38,13 +38,13 @@ namespace MirrorHookInternals::D3D11Extender {
   std::unique_ptr<MemoryEditor::Editor::DetourInfo> detourInfo  = nullptr;
 
   HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
-    for (const auto& ext : mPresentExts)
-      if (ext) ext(pSwapChain, SyncInterval, Flags);
+    for (const auto& _ext : mPresentExts)
+      if (_ext) _ext(pSwapChain, SyncInterval, Flags);
 
     detourInfo->Undetour();
-    auto ret = origPresent(pSwapChain, SyncInterval, Flags);
+    auto _ret = origPresent(pSwapChain, SyncInterval, Flags);
     detourInfo->Detour();
-    return ret;
+    return _ret;
   }
 #pragma endregion
 #pragma region Exported
@@ -61,8 +61,8 @@ namespace MirrorHookInternals::D3D11Extender {
 #pragma endregion
 
   bool Init(HWND& hWindow) {
-    auto hLib = GetModuleHandle(TEXT("d3d11.dll"));
-    if (!hLib) return false;
+    auto _hLib = GetModuleHandle(TEXT("d3d11.dll"));
+    if (!_hLib) return false;
 
     D3D_FEATURE_LEVEL    _levels[2] = {D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1};
     D3D_FEATURE_LEVEL    _obtainedLevel;
@@ -84,14 +84,14 @@ namespace MirrorHookInternals::D3D11Extender {
     if (FAILED(reinterpret_cast<HRESULT(__stdcall*)(
                    IDXGIAdapter*, D3D_DRIVER_TYPE, HMODULE, UINT, const D3D_FEATURE_LEVEL*, UINT, UINT,
                    const DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**, ID3D11Device**, D3D_FEATURE_LEVEL*,
-                   ID3D11DeviceContext**)>(GetProcAddress(hLib, "D3D11CreateDeviceAndSwapChain"))(
+                   ID3D11DeviceContext**)>(GetProcAddress(_hLib, "D3D11CreateDeviceAndSwapChain"))(
             nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, _levels, sizeof(_levels) / sizeof(D3D_FEATURE_LEVEL),
             D3D11_SDK_VERSION, &_sd, &_pFakeSwapChain, &_pFakeDevice, &_obtainedLevel, &_pFakeDeviceCtx)))
       return false;
 
-    auto* vtDevice = *(std::uintptr_t**)_pFakeSwapChain;
-    origPresent    = reinterpret_cast<Present_t>(vtDevice[8]);
-    detourInfo     = std::move(MemoryEditor::Get().Detour(vtDevice[8], reinterpret_cast<std::uintptr_t>(&hkPresent)));
+    auto* _vtDevice = *(std::uintptr_t**)_pFakeSwapChain;
+    origPresent     = reinterpret_cast<Present_t>(_vtDevice[8]);
+    detourInfo      = std::move(MemoryEditor::Get().Detour(_vtDevice[8], reinterpret_cast<std::uintptr_t>(&hkPresent)));
 
     _pFakeSwapChain->Release();
     _pFakeDevice->Release();
@@ -105,7 +105,7 @@ namespace MirrorHookInternals::D3D11Extender {
     return true;
   }
   bool Init(const wchar_t* const szWindowTitle) {
-    if (auto hWindow = FindWindowW(0, szWindowTitle)) return Init(hWindow);
+    if (auto _hWindow = FindWindowW(0, szWindowTitle)) return Init(_hWindow);
     return false;
   }
 }  // namespace MirrorHookInternals::D3D11Extender

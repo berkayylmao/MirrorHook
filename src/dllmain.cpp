@@ -76,16 +76,16 @@ void Init() {
   while (MirrorHookInternals::mLetInitRun) {
     EnumWindows(
         [](HWND hWnd, LPARAM lParam) -> BOOL {
-          DWORD pId;
-          GetWindowThreadProcessId(hWnd, &pId);
+          DWORD _pId;
+          GetWindowThreadProcessId(hWnd, &_pId);
 
-          if (GetCurrentProcessId() == pId) {
-            TCHAR szClassName[MAX_PATH];
-            if (GetClassName(hWnd, szClassName, _countof(szClassName))) {
+          if (GetCurrentProcessId() == _pId) {
+            TCHAR _szClassName[MAX_PATH];
+            if (GetClassName(hWnd, _szClassName, _countof(_szClassName))) {
 #ifdef UNICODE
-              if (wcscmp(szClassName, L"ConsoleWindowClass") == 0) {
+              if (wcscmp(_szClassName, L"ConsoleWindowClass") == 0) {
 #else
-              if (strcmp(szClassName, "ConsoleWindowClass") == 0) {
+              if (strcmp(_szClassName, "ConsoleWindowClass") == 0) {
 #endif
                 return TRUE;
               }
