@@ -19,21 +19,25 @@
 
 #pragma once
 #include "pch.h"
-#include "Helpers/D3D11/D3D11Def.h"
 #include "Helpers/MemoryEditor/MemoryEditor.hpp"
 #include "Helpers/WndProc/WndProcExtender.hpp"
+// d3d1
+#pragma warning(push, 0)
+#include <d3d11.h>
+#pragma warning(pop)
+typedef HRESULT(__stdcall* Present_t)(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags);
 
 namespace MirrorHookInternals::D3D11Extender {
   enum class D3D11Extension { Present };
 
-  std::mutex                    mMutex;
-  std::vector<D3D11::Present_t> mPresentExts;
+  std::mutex             mMutex;
+  std::vector<Present_t> mPresentExts;
 
 #pragma region Hooks
-  D3D11::Present_t                                  origPresent = nullptr;
+  Present_t                                         origPresent = nullptr;
   std::unique_ptr<MemoryEditor::Editor::DetourInfo> detourInfo  = nullptr;
 
-  HRESULT __stdcall hkPresent(D3D11::IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
+  HRESULT __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
     for (const auto& ext : mPresentExts)
       if (ext) ext(pSwapChain, SyncInterval, Flags);
 
@@ -48,7 +52,7 @@ namespace MirrorHookInternals::D3D11Extender {
 #pragma ExportedFunction
     std::scoped_lock<std::mutex> _l(mMutex);
     if (type == D3D11Extension::Present) {
-      mPresentExts.push_back(reinterpret_cast<D3D11::Present_t>(pExtension));
+      mPresentExts.push_back(reinterpret_cast<Present_t>(pExtension));
       return true;
     }
 
@@ -60,42 +64,42 @@ namespace MirrorHookInternals::D3D11Extender {
     auto hLib = GetModuleHandle(TEXT("d3d11.dll"));
     if (!hLib) return false;
 
-    INT                         levels[2] = {0xa100, 0xb000};
-    INT                         obtainedLevel;
-    D3D11::DXGI_SWAP_CHAIN_DESC sd;
+    D3D_FEATURE_LEVEL    _levels[2] = {D3D_FEATURE_LEVEL_11_0, D3D_FEATURE_LEVEL_10_1};
+    D3D_FEATURE_LEVEL    _obtainedLevel;
+    DXGI_SWAP_CHAIN_DESC _sd;
     {
-      sd.BufferCount       = 1;
-      sd.BufferDesc.Format = 28;
-      sd.BufferUsage       = 32;
-      sd.OutputWindow      = hWindow;
-      sd.SampleDesc.Count  = 1;
-      sd.Windowed          = TRUE;
-      sd.SwapEffect        = 0;
-      sd.Flags             = 2;
+      _sd.BufferCount       = 1;
+      _sd.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+      _sd.BufferUsage       = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+      _sd.OutputWindow      = hWindow;
+      _sd.SampleDesc.Count  = 1;
+      _sd.Windowed          = TRUE;
+      _sd.SwapEffect        = DXGI_SWAP_EFFECT_DISCARD;
+      _sd.Flags             = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
     }
 
-    D3D11::ID3D11Device*        pFakeDevice;
-    D3D11::ID3D11DeviceContext* pFakeDeviceCtx;
-    D3D11::IDXGISwapChain*      pFakeSwapChain;
-    if (FAILED(reinterpret_cast<HRESULT(__stdcall*)(void*, INT, HMODULE, UINT, const INT*, UINT, UINT,
-                                                    const D3D11::DXGI_SWAP_CHAIN_DESC*, D3D11::IDXGISwapChain**,
-                                                    D3D11::ID3D11Device**, INT*, D3D11::ID3D11DeviceContext**)>(
-            GetProcAddress(hLib, "D3D11CreateDeviceAndSwapChain"))(nullptr, 1, nullptr, 0, levels, _countof(levels), 7,
-                                                                   &sd, &pFakeSwapChain, &pFakeDevice, &obtainedLevel,
-                                                                   &pFakeDeviceCtx)))
+    ID3D11Device*        _pFakeDevice;
+    ID3D11DeviceContext* _pFakeDeviceCtx;
+    IDXGISwapChain*      _pFakeSwapChain;
+    if (FAILED(reinterpret_cast<HRESULT(__stdcall*)(
+                   IDXGIAdapter*, D3D_DRIVER_TYPE, HMODULE, UINT, const D3D_FEATURE_LEVEL*, UINT, UINT,
+                   const DXGI_SWAP_CHAIN_DESC*, IDXGISwapChain**, ID3D11Device**, D3D_FEATURE_LEVEL*,
+                   ID3D11DeviceContext**)>(GetProcAddress(hLib, "D3D11CreateDeviceAndSwapChain"))(
+            nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, 0, _levels, sizeof(_levels) / sizeof(D3D_FEATURE_LEVEL),
+            D3D11_SDK_VERSION, &_sd, &_pFakeSwapChain, &_pFakeDevice, &_obtainedLevel, &_pFakeDeviceCtx)))
       return false;
 
-    auto* vtDevice = *(std::uintptr_t**)pFakeSwapChain;
-    origPresent    = reinterpret_cast<D3D11::Present_t>(vtDevice[8]);
+    auto* vtDevice = *(std::uintptr_t**)_pFakeSwapChain;
+    origPresent    = reinterpret_cast<Present_t>(vtDevice[8]);
     detourInfo     = std::move(MemoryEditor::Get().Detour(vtDevice[8], reinterpret_cast<std::uintptr_t>(&hkPresent)));
 
-    pFakeSwapChain->Release();
-    pFakeDevice->Release();
-    pFakeDeviceCtx->Release();
+    _pFakeSwapChain->Release();
+    _pFakeDevice->Release();
+    _pFakeDeviceCtx->Release();
 
-    pFakeSwapChain = nullptr;
-    pFakeDevice    = nullptr;
-    pFakeDeviceCtx = nullptr;
+    _pFakeSwapChain = nullptr;
+    _pFakeDevice    = nullptr;
+    _pFakeDeviceCtx = nullptr;
 
     WndProcExtender::Init(hWindow);
     return true;

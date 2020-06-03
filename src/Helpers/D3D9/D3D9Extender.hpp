@@ -19,29 +19,36 @@
 
 #pragma once
 #include "pch.h"
-#include "Helpers/D3D9/D3D9Def.h"
 #include "Helpers/MemoryEditor/MemoryEditor.hpp"
 #include "Helpers/WndProc/WndProcExtender.hpp"
+// d3d9
+#pragma warning(push, 0)
+#include <d3d9.h>
+#pragma warning(pop)
+typedef HRESULT(__stdcall* Reset_t)(LPDIRECT3DDEVICE9 pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters);
+typedef HRESULT(__stdcall* BeginScene_t)(LPDIRECT3DDEVICE9 pDevice);
+typedef HRESULT(__stdcall* EndScene_t)(LPDIRECT3DDEVICE9 pDevice);
+typedef HRESULT(__stdcall* BeginStateBlock_t)(LPDIRECT3DDEVICE9 pDevice);
 
 namespace MirrorHookInternals::D3D9Extender {
   enum class D3D9Extension { BeginScene, EndScene, BeforeReset, AfterReset };
 
-  std::mutex                      mMutex;
-  std::vector<D3D9::BeginScene_t> mBeginSceneExts;
-  std::vector<D3D9::EndScene_t>   mEndSceneExts;
-  std::vector<D3D9::Reset_t>      mBefResetExts;
-  std::vector<D3D9::Reset_t>      mAftResetExts;
+  std::mutex                mMutex;
+  std::vector<BeginScene_t> mBeginSceneExts;
+  std::vector<EndScene_t>   mEndSceneExts;
+  std::vector<Reset_t>      mBefResetExts;
+  std::vector<Reset_t>      mAftResetExts;
 
 #pragma region Hooks
   // detours
-  std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9::BeginScene_t>      mBeginScene;
-  std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9::EndScene_t>        mEndScene;
-  std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9::Reset_t>           mReset;
-  std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9::BeginStateBlock_t> mBeginStateBlock;
+  std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, BeginScene_t>      mBeginScene;
+  std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, EndScene_t>        mEndScene;
+  std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, Reset_t>           mReset;
+  std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, BeginStateBlock_t> mBeginStateBlock;
 
-  HRESULT __stdcall hkBeginScene(D3D9::LPDIRECT3DDEVICE9 pDevice) {
+  HRESULT __stdcall hkBeginScene(LPDIRECT3DDEVICE9 pDevice) {
     mBeginScene.first->Undetour();
-    if (pDevice->TestCooperativeLevel() == 0) {
+    if (pDevice->TestCooperativeLevel() == D3D_OK) {
       for (const auto& ext : mBeginSceneExts)
         if (ext) ext(pDevice);
     }
@@ -50,9 +57,9 @@ namespace MirrorHookInternals::D3D9Extender {
     mBeginScene.first->Detour();
     return _ret;
   }
-  HRESULT __stdcall hkEndScene(D3D9::LPDIRECT3DDEVICE9 pDevice) {
+  HRESULT __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice) {
     mEndScene.first->Undetour();
-    if (pDevice->TestCooperativeLevel() == 0) {
+    if (pDevice->TestCooperativeLevel() == D3D_OK) {
       for (const auto& ext : mEndSceneExts)
         if (ext) ext(pDevice);
     }
@@ -61,7 +68,7 @@ namespace MirrorHookInternals::D3D9Extender {
     mEndScene.first->Detour();
     return _ret;
   }
-  HRESULT __stdcall hkReset(D3D9::LPDIRECT3DDEVICE9 pDevice, D3D9::D3DPRESENT_PARAMETERS* pPresentationParameters) {
+  HRESULT __stdcall hkReset(LPDIRECT3DDEVICE9 pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters) {
     mReset.first->Undetour();
 
     for (const auto& ext : mBefResetExts)
@@ -75,7 +82,7 @@ namespace MirrorHookInternals::D3D9Extender {
     mReset.first->Detour();
     return _ret;
   }
-  HRESULT __stdcall hkBeginStateBlock(D3D9::LPDIRECT3DDEVICE9 pDevice) {
+  HRESULT __stdcall hkBeginStateBlock(LPDIRECT3DDEVICE9 pDevice) {
     mBeginScene.first.reset();
     mEndScene.first.reset();
     mReset.first.reset();
@@ -85,14 +92,14 @@ namespace MirrorHookInternals::D3D9Extender {
     auto* vtDevice = *(std::uintptr_t**)pDevice;
     mBeginScene =
         std::make_pair(MemoryEditor::Get().Detour(vtDevice[41], reinterpret_cast<std::uintptr_t>(&hkBeginScene)),
-                       reinterpret_cast<D3D9::BeginScene_t>(vtDevice[41]));
+                       reinterpret_cast<BeginScene_t>(vtDevice[41]));
     mEndScene = std::make_pair(MemoryEditor::Get().Detour(vtDevice[42], reinterpret_cast<std::uintptr_t>(&hkEndScene)),
-                               reinterpret_cast<D3D9::EndScene_t>(vtDevice[42]));
+                               reinterpret_cast<EndScene_t>(vtDevice[42]));
     mReset    = std::make_pair(MemoryEditor::Get().Detour(vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset)),
-                            reinterpret_cast<D3D9::Reset_t>(vtDevice[16]));
+                            reinterpret_cast<Reset_t>(vtDevice[16]));
     mBeginStateBlock =
         std::make_pair(MemoryEditor::Get().Detour(vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock)),
-                       reinterpret_cast<D3D9::BeginStateBlock_t>(vtDevice[60]));
+                       reinterpret_cast<BeginStateBlock_t>(vtDevice[60]));
     return _ret;
   }
 #pragma endregion
@@ -103,16 +110,16 @@ namespace MirrorHookInternals::D3D9Extender {
 
     switch (type) {
       case D3D9Extension::BeginScene:
-        mBeginSceneExts.push_back(reinterpret_cast<D3D9::BeginScene_t>(pExtension));
+        mBeginSceneExts.push_back(reinterpret_cast<BeginScene_t>(pExtension));
         break;
       case D3D9Extension::EndScene:
-        mEndSceneExts.push_back(reinterpret_cast<D3D9::EndScene_t>(pExtension));
+        mEndSceneExts.push_back(reinterpret_cast<EndScene_t>(pExtension));
         break;
       case D3D9Extension::BeforeReset:
-        mBefResetExts.push_back(reinterpret_cast<D3D9::Reset_t>(pExtension));
+        mBefResetExts.push_back(reinterpret_cast<Reset_t>(pExtension));
         break;
       case D3D9Extension::AfterReset:
-        mAftResetExts.push_back(reinterpret_cast<D3D9::Reset_t>(pExtension));
+        mAftResetExts.push_back(reinterpret_cast<Reset_t>(pExtension));
         break;
       default:
         return false;
@@ -121,68 +128,75 @@ namespace MirrorHookInternals::D3D9Extender {
   }
 #pragma endregion
 
-  bool Init(D3D9::LPDIRECT3DDEVICE9* ppDevice) {
+#pragma warning(push)
+#pragma warning(disable : 28182)  // dereferencing null pointer
+
+  bool Init(LPDIRECT3DDEVICE9* ppDevice) {
     if (!GetModuleHandle(TEXT("d3d9.dll"))) return false;
 
     while (!*ppDevice) std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    auto mDevice = *ppDevice;
+    auto _pDevice = *ppDevice;
 
-    D3D9::D3DDEVICE_CREATION_PARAMETERS cParams;
-    mDevice->GetCreationParameters(&cParams);
+    D3DDEVICE_CREATION_PARAMETERS cParams;
+    _pDevice->GetCreationParameters(&cParams);
 
-    auto* vtDevice = **(std::uintptr_t***)ppDevice;
+    auto* vtDevice = *(std::uintptr_t**)_pDevice;
     mBeginScene =
         std::make_pair(MemoryEditor::Get().Detour(vtDevice[41], reinterpret_cast<std::uintptr_t>(&hkBeginScene)),
-                       reinterpret_cast<D3D9::BeginScene_t>(vtDevice[41]));
+                       reinterpret_cast<BeginScene_t>(vtDevice[41]));
     mEndScene = std::make_pair(MemoryEditor::Get().Detour(vtDevice[42], reinterpret_cast<std::uintptr_t>(&hkEndScene)),
-                               reinterpret_cast<D3D9::EndScene_t>(vtDevice[42]));
+                               reinterpret_cast<EndScene_t>(vtDevice[42]));
     mReset    = std::make_pair(MemoryEditor::Get().Detour(vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset)),
-                            reinterpret_cast<D3D9::Reset_t>(vtDevice[16]));
+                            reinterpret_cast<Reset_t>(vtDevice[16]));
     mBeginStateBlock =
         std::make_pair(MemoryEditor::Get().Detour(vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock)),
-                       reinterpret_cast<D3D9::BeginStateBlock_t>(vtDevice[60]));
+                       reinterpret_cast<BeginStateBlock_t>(vtDevice[60]));
 
     WndProcExtender::Init(cParams.hFocusWindow);
     return true;
   }
+#pragma warning(pop)
+
   bool Init(HWND& hWindow) {
     auto hLib = GetModuleHandle(TEXT("d3d9.dll"));
     if (!hLib) return false;
 
-    D3D9::D3DPRESENT_PARAMETERS params = {0};
+    D3DPRESENT_PARAMETERS _params = {0};
     {
-      params.SwapEffect    = 1;
-      params.hDeviceWindow = hWindow;
-      params.Windowed      = FALSE;
+      _params.SwapEffect    = D3DSWAPEFFECT_DISCARD;
+      _params.hDeviceWindow = hWindow;
+      _params.Windowed      = FALSE;
     }
 
-    D3D9::LPDIRECT3DDEVICE9 mDevice;
-    D3D9::LPDIRECT3D9       pD3D =
-        reinterpret_cast<D3D9::LPDIRECT3D9(__stdcall*)(UINT)>(GetProcAddress(hLib, "Direct3DCreate9"))(32);
-    if (FAILED(pD3D->CreateDevice(0, 1, hWindow, 32, &params, &mDevice))) {
-      params.Windowed = TRUE;
-      if (FAILED(pD3D->CreateDevice(0, 1, hWindow, 32, &params, &mDevice))) {
-        pD3D->Release();
+    LPDIRECT3DDEVICE9 _pDevice;
+    LPDIRECT3D9       _pD3D =
+        reinterpret_cast<LPDIRECT3D9(__stdcall*)(UINT)>(GetProcAddress(hLib, "Direct3DCreate9"))(D3D_SDK_VERSION);
+    if (FAILED(_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWindow, D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                                   &_params, &_pDevice))) {
+      _params.Windowed = TRUE;
+      if (FAILED(_pD3D->CreateDevice(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, hWindow, D3DCREATE_SOFTWARE_VERTEXPROCESSING,
+                                     &_params, &_pDevice))) {
+        _pD3D->Release();
         return false;
       }
     }
 
-    auto* vtDevice = *(std::uintptr_t**)mDevice;
+    auto* vtDevice = *(std::uintptr_t**)_pDevice;
     mBeginScene =
         std::make_pair(MemoryEditor::Get().Detour(vtDevice[41], reinterpret_cast<std::uintptr_t>(&hkBeginScene)),
-                       reinterpret_cast<D3D9::BeginScene_t>(vtDevice[41]));
+                       reinterpret_cast<BeginScene_t>(vtDevice[41]));
     mEndScene = std::make_pair(MemoryEditor::Get().Detour(vtDevice[42], reinterpret_cast<std::uintptr_t>(&hkEndScene)),
-                               reinterpret_cast<D3D9::EndScene_t>(vtDevice[42]));
+                               reinterpret_cast<EndScene_t>(vtDevice[42]));
     mReset    = std::make_pair(MemoryEditor::Get().Detour(vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset)),
-                            reinterpret_cast<D3D9::Reset_t>(vtDevice[16]));
+                            reinterpret_cast<Reset_t>(vtDevice[16]));
     mBeginStateBlock =
         std::make_pair(MemoryEditor::Get().Detour(vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock)),
-                       reinterpret_cast<D3D9::BeginStateBlock_t>(vtDevice[60]));
+                       reinterpret_cast<BeginStateBlock_t>(vtDevice[60]));
 
-    mDevice->Release();
-    mDevice = nullptr;
-    pD3D->Release();
-    pD3D = nullptr;
+    _pDevice->Release();
+    _pDevice = nullptr;
+    _pD3D->Release();
+    _pD3D = nullptr;
 
     WndProcExtender::Init(hWindow);
     return true;

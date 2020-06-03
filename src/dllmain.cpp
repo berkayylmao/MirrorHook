@@ -64,8 +64,7 @@ namespace MirrorHookInternals {
     std::scoped_lock<std::mutex> _l(mMutex);
 
     mLetInitRun = false;
-    if (ppDevice && framework == Framework::D3D9 &&
-        D3D9Extender::Init(reinterpret_cast<D3D9::LPDIRECT3DDEVICE9*>(ppDevice)))
+    if (ppDevice && framework == Framework::D3D9 && D3D9Extender::Init(reinterpret_cast<LPDIRECT3DDEVICE9*>(ppDevice)))
       return true;
     return false;
   }
