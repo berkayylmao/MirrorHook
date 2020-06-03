@@ -29,33 +29,33 @@
 namespace MirrorHook {
   enum class Framework { None, D3D9, D3D11 };
 
-  static bool Init(Framework framework, const wchar_t* const szWindowTitle) {
+  static inline bool Init(Framework framework, const wchar_t* const szWindowTitle) {
     return reinterpret_cast<bool(__stdcall*)(Framework, const wchar_t* const)>(GetProcAddress(
         GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::InitWithWindowTitle"))(framework, szWindowTitle);
   }
-  static bool Init(Framework framework, HWND& hWnd) {
+  static inline bool Init(Framework framework, HWND& hWnd) {
     return reinterpret_cast<bool(__stdcall*)(Framework, HWND&)>(GetProcAddress(
         GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::InitWithWindowHandle"))(framework, hWnd);
   }
-  static bool Init(Framework framework, void** ppDevice) {
+  static inline bool Init(Framework framework, void** ppDevice) {
     return reinterpret_cast<bool(__stdcall*)(Framework, void**)>(GetProcAddress(
         GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::InitWithDevicePointer"))(framework, ppDevice);
   }
 
   namespace D3D9 {
-    enum class D3D9Extension { BeginScene, EndScene, BeforeReset, AfterReset };
+    enum class Type { BeginScene, EndScene, BeforeReset, AfterReset };
 
-    static bool AddExtension(D3D9Extension type, void* const pExtension) {
-      return reinterpret_cast<bool(__stdcall*)(D3D9Extension, void* const)>(
+    static inline bool AddExtension(Type type, void* const pExtension) {
+      return reinterpret_cast<bool(__stdcall*)(Type, void* const)>(
           GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D9Extender::AddExtension"))(
           type, pExtension);
     }
   }  // namespace D3D9
   namespace D3D11 {
-    enum class D3D11Extension { Present };
+    enum class Type { Present };
 
-    static bool AddExtension(D3D11Extension type, void* const pExtension) {
-      return reinterpret_cast<bool(__stdcall*)(D3D11Extension, void* const)>(
+    static inline bool AddExtension(Type type, void* const pExtension) {
+      return reinterpret_cast<bool(__stdcall*)(Type, void* const)>(
           GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::D3D11Extender::AddExtension"))(
           type, pExtension);
     }
@@ -63,11 +63,11 @@ namespace MirrorHook {
   namespace WndProc {
     constexpr LRESULT g_constIgnoreThisReturn = -1;
 
-    static bool AddExtension(void* const pExtension) {
+    static inline bool AddExtension(void* const pExtension) {
       return reinterpret_cast<bool(__stdcall*)(void* const)>(GetProcAddress(
           GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::WndProcExtender::AddExtension"))(pExtension);
     }
-    static HWND GetWindowHandle() {
+    static inline HWND GetWindowHandle() {
       return reinterpret_cast<HWND(__stdcall*)()>(GetProcAddress(
           GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::WndProcExtender::GetWindowHandle"))();
     }
