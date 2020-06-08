@@ -21,9 +21,9 @@
 #include "pch.h"
 
 namespace MirrorHookInternals::WndProcExtender {
-  std::mutex           mMutex;
-  HWND                 mWindowHandle;
-  std::vector<WNDPROC> mExtensions;
+  std::mutex         mMutex;
+  HWND               mWindowHandle;
+  std::list<WNDPROC> mExtensions;
 
 #pragma region Hooks
   WNDPROC origWndProc;
@@ -42,7 +42,9 @@ namespace MirrorHookInternals::WndProcExtender {
 #pragma region Exported
   void __stdcall AddExtension(void* pExtension) {
 #pragma ExportedFunction
+    if (!pExtension) return;
     std::scoped_lock<std::mutex> _l(mMutex);
+
     mExtensions.push_back(reinterpret_cast<WNDPROC>(pExtension));
   }
   HWND __stdcall GetWindowHandle() {

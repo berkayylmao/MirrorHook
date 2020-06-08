@@ -21,7 +21,8 @@
 #include "pch.h"
 #include "Helpers/MemoryEditor/MemoryEditor.hpp"
 #include "Helpers/WndProc/WndProcExtender.hpp"
-// d3d1
+
+// D3D11
 #pragma warning(push, 0)
 #include <d3d11.h>
 #pragma warning(pop)
@@ -30,8 +31,8 @@ typedef HRESULT(__stdcall* Present_t)(IDXGISwapChain* pSwapChain, UINT SyncInter
 namespace MirrorHookInternals::D3D11Extender {
   enum class D3D11Extension { Present };
 
-  std::mutex             mMutex;
-  std::vector<Present_t> mPresentExts;
+  std::mutex           mMutex;
+  std::list<Present_t> mPresentExts;
 
 #pragma region Hooks
   Present_t                                         origPresent = nullptr;
@@ -50,7 +51,9 @@ namespace MirrorHookInternals::D3D11Extender {
 #pragma region Exported
   bool __stdcall AddExtension(D3D11Extension type, void* pExtension) {
 #pragma ExportedFunction
+    if (!pExtension) return false;
     std::scoped_lock<std::mutex> _l(mMutex);
+
     if (type == D3D11Extension::Present) {
       mPresentExts.push_back(reinterpret_cast<Present_t>(pExtension));
       return true;
@@ -89,7 +92,7 @@ namespace MirrorHookInternals::D3D11Extender {
             D3D11_SDK_VERSION, &_sd, &_pFakeSwapChain, &_pFakeDevice, &_obtainedLevel, &_pFakeDeviceCtx)))
       return false;
 
-    auto* _vtDevice = *(std::uintptr_t**)_pFakeSwapChain;
+    auto* _vtDevice = *reinterpret_cast<std::uintptr_t**>(_pFakeSwapChain);
     origPresent     = reinterpret_cast<Present_t>(_vtDevice[8]);
     detourInfo      = std::move(MemoryEditor::Get().Detour(_vtDevice[8], reinterpret_cast<std::uintptr_t>(&hkPresent)));
 

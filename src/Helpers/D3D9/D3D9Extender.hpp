@@ -21,7 +21,8 @@
 #include "pch.h"
 #include "Helpers/MemoryEditor/MemoryEditor.hpp"
 #include "Helpers/WndProc/WndProcExtender.hpp"
-// d3d9
+
+// D3D9
 #pragma warning(push, 0)
 #include <d3d9.h>
 #pragma warning(pop)
@@ -33,11 +34,11 @@ typedef HRESULT(__stdcall* BeginStateBlock_t)(LPDIRECT3DDEVICE9 pDevice);
 namespace MirrorHookInternals::D3D9Extender {
   enum class D3D9Extension { BeginScene, EndScene, BeforeReset, AfterReset };
 
-  std::mutex                mMutex;
-  std::vector<BeginScene_t> mBeginSceneExts;
-  std::vector<EndScene_t>   mEndSceneExts;
-  std::vector<Reset_t>      mBefResetExts;
-  std::vector<Reset_t>      mAftResetExts;
+  std::mutex              mMutex;
+  std::list<BeginScene_t> mBeginSceneExts;
+  std::list<EndScene_t>   mEndSceneExts;
+  std::list<Reset_t>      mBefResetExts;
+  std::list<Reset_t>      mAftResetExts;
 
 #pragma region Hooks
   // detours
@@ -47,10 +48,7 @@ namespace MirrorHookInternals::D3D9Extender {
   std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, BeginStateBlock_t> mBeginStateBlock;
 
   HRESULT __stdcall hkBeginScene(LPDIRECT3DDEVICE9 pDevice) {
-    if (pDevice->TestCooperativeLevel() == D3D_OK) {
-      for (const auto& _ext : mBeginSceneExts)
-        if (_ext) _ext(pDevice);
-    }
+    for (const auto& _ext : mBeginSceneExts) _ext(pDevice);
 
     mBeginScene.first->Undetour();
     auto _ret = mBeginScene.second(pDevice);
@@ -58,10 +56,7 @@ namespace MirrorHookInternals::D3D9Extender {
     return _ret;
   }
   HRESULT __stdcall hkEndScene(LPDIRECT3DDEVICE9 pDevice) {
-    if (pDevice->TestCooperativeLevel() == D3D_OK) {
-      for (const auto& _ext : mEndSceneExts)
-        if (_ext) _ext(pDevice);
-    }
+    for (const auto& _ext : mEndSceneExts) _ext(pDevice);
 
     mEndScene.first->Undetour();
     auto _ret = mEndScene.second(pDevice);
@@ -69,15 +64,13 @@ namespace MirrorHookInternals::D3D9Extender {
     return _ret;
   }
   HRESULT __stdcall hkReset(LPDIRECT3DDEVICE9 pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters) {
-    for (const auto& _ext : mBefResetExts)
-      if (_ext) _ext(pDevice, pPresentationParameters);
+    for (const auto& _ext : mBefResetExts) _ext(pDevice, pPresentationParameters);
 
     mReset.first->Undetour();
     auto _ret = mReset.second(pDevice, pPresentationParameters);
     mReset.first->Detour();
 
-    for (const auto& _ext : mAftResetExts)
-      if (_ext) _ext(pDevice, pPresentationParameters);
+    for (const auto& _ext : mAftResetExts) _ext(pDevice, pPresentationParameters);
 
     return _ret;
   }
@@ -88,42 +81,41 @@ namespace MirrorHookInternals::D3D9Extender {
     mBeginStateBlock.first.reset();
     auto _ret = mBeginStateBlock.second(pDevice);
 
-    auto* _vtDevice = *(std::uintptr_t**)pDevice;
-    mBeginScene     = {
+    auto* _vtDevice  = *reinterpret_cast<std::uintptr_t**>(pDevice);
+    mBeginStateBlock = {
+        std::move(MemoryEditor::Get().Detour(_vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock))),
+        reinterpret_cast<BeginStateBlock_t>(_vtDevice[60])};
+    mBeginScene = {
         std::move(MemoryEditor::Get().Detour(_vtDevice[41], reinterpret_cast<std::uintptr_t>(&hkBeginScene))),
         reinterpret_cast<BeginScene_t>(_vtDevice[41])};
     mEndScene = {std::move(MemoryEditor::Get().Detour(_vtDevice[42], reinterpret_cast<std::uintptr_t>(&hkEndScene))),
                  reinterpret_cast<EndScene_t>(_vtDevice[42])};
     mReset    = {std::move(MemoryEditor::Get().Detour(_vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset))),
               reinterpret_cast<Reset_t>(_vtDevice[16])};
-    mBeginStateBlock = {
-        std::move(MemoryEditor::Get().Detour(_vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock))),
-        reinterpret_cast<BeginStateBlock_t>(_vtDevice[60])};
     return _ret;
   }
 #pragma endregion
 #pragma region Exported
   bool __stdcall AddExtension(D3D9Extension type, void* pExtension) {
 #pragma ExportedFunction
+    if (!pExtension) return false;
     std::scoped_lock<std::mutex> _l(mMutex);
 
     switch (type) {
       case D3D9Extension::BeginScene:
         mBeginSceneExts.push_back(reinterpret_cast<BeginScene_t>(pExtension));
-        break;
+        return true;
       case D3D9Extension::EndScene:
         mEndSceneExts.push_back(reinterpret_cast<EndScene_t>(pExtension));
-        break;
+        return true;
       case D3D9Extension::BeforeReset:
         mBefResetExts.push_back(reinterpret_cast<Reset_t>(pExtension));
-        break;
+        return true;
       case D3D9Extension::AfterReset:
         mAftResetExts.push_back(reinterpret_cast<Reset_t>(pExtension));
-        break;
-      default:
-        return false;
+        return true;
     }
-    return true;
+    return false;
   }
 #pragma endregion
 
@@ -139,17 +131,17 @@ namespace MirrorHookInternals::D3D9Extender {
     D3DDEVICE_CREATION_PARAMETERS _cParams;
     _pDevice->GetCreationParameters(&_cParams);
 
-    auto* _vtDevice = *(std::uintptr_t**)_pDevice;
-    mBeginScene     = {
+    auto* _vtDevice  = *reinterpret_cast<std::uintptr_t**>(_pDevice);
+    mBeginStateBlock = {
+        std::move(MemoryEditor::Get().Detour(_vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock))),
+        reinterpret_cast<BeginStateBlock_t>(_vtDevice[60])};
+    mBeginScene = {
         std::move(MemoryEditor::Get().Detour(_vtDevice[41], reinterpret_cast<std::uintptr_t>(&hkBeginScene))),
         reinterpret_cast<BeginScene_t>(_vtDevice[41])};
     mEndScene = {std::move(MemoryEditor::Get().Detour(_vtDevice[42], reinterpret_cast<std::uintptr_t>(&hkEndScene))),
                  reinterpret_cast<EndScene_t>(_vtDevice[42])};
     mReset    = {std::move(MemoryEditor::Get().Detour(_vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset))),
               reinterpret_cast<Reset_t>(_vtDevice[16])};
-    mBeginStateBlock = {
-        std::move(MemoryEditor::Get().Detour(_vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock))),
-        reinterpret_cast<BeginStateBlock_t>(_vtDevice[60])};
 
     WndProcExtender::Init(_cParams.hFocusWindow);
     return true;
@@ -180,17 +172,17 @@ namespace MirrorHookInternals::D3D9Extender {
       }
     }
 
-    auto* _vtDevice = *(std::uintptr_t**)_pDevice;
-    mBeginScene     = {
+    auto* _vtDevice  = *reinterpret_cast<std::uintptr_t**>(_pDevice);
+    mBeginStateBlock = {
+        std::move(MemoryEditor::Get().Detour(_vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock))),
+        reinterpret_cast<BeginStateBlock_t>(_vtDevice[60])};
+    mBeginScene = {
         std::move(MemoryEditor::Get().Detour(_vtDevice[41], reinterpret_cast<std::uintptr_t>(&hkBeginScene))),
         reinterpret_cast<BeginScene_t>(_vtDevice[41])};
     mEndScene = {std::move(MemoryEditor::Get().Detour(_vtDevice[42], reinterpret_cast<std::uintptr_t>(&hkEndScene))),
                  reinterpret_cast<EndScene_t>(_vtDevice[42])};
     mReset    = {std::move(MemoryEditor::Get().Detour(_vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset))),
               reinterpret_cast<Reset_t>(_vtDevice[16])};
-    mBeginStateBlock = {
-        std::move(MemoryEditor::Get().Detour(_vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock))),
-        reinterpret_cast<BeginStateBlock_t>(_vtDevice[60])};
 
     _pDevice->Release();
     _pDevice = nullptr;

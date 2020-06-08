@@ -25,13 +25,11 @@ namespace MirrorHookInternals {
   enum class Framework { None, D3D9, D3D11 };
 
   std::mutex mMutex;
-  bool       mLetInitRun = true;
 
   bool __stdcall InitWithWindowTitle(Framework framework, const wchar_t* const szWindowTitle) {
 #pragma ExportedFunction
     std::scoped_lock<std::mutex> _l(mMutex);
 
-    mLetInitRun = false;
     if (szWindowTitle) {
       switch (framework) {
         case Framework::D3D9:
@@ -48,7 +46,6 @@ namespace MirrorHookInternals {
 #pragma ExportedFunction
     std::scoped_lock<std::mutex> _l(mMutex);
 
-    mLetInitRun = false;
     switch (framework) {
       case Framework::D3D9:
         if (D3D9Extender::Init(hWindow)) return true;
@@ -63,7 +60,6 @@ namespace MirrorHookInternals {
 #pragma ExportedFunction
     std::scoped_lock<std::mutex> _l(mMutex);
 
-    mLetInitRun = false;
     if (ppDevice && framework == Framework::D3D9 && D3D9Extender::Init(reinterpret_cast<LPDIRECT3DDEVICE9*>(ppDevice)))
       return true;
     return false;
@@ -71,44 +67,29 @@ namespace MirrorHookInternals {
 }  // namespace MirrorHookInternals
 
 void Init() {
-  thread_local HWND _hWnd = nullptr;
+  EnumWindows(
+      [](HWND hWnd, LPARAM) -> BOOL {
+        DWORD _pId;
+        GetWindowThreadProcessId(hWnd, &_pId);
 
-  while (MirrorHookInternals::mLetInitRun) {
-    EnumWindows(
-        [](HWND hWnd, LPARAM lParam) -> BOOL {
-          DWORD _pId;
-          GetWindowThreadProcessId(hWnd, &_pId);
-
-          if (GetCurrentProcessId() == _pId) {
-            TCHAR _szClassName[MAX_PATH];
-            if (GetClassName(hWnd, _szClassName, _countof(_szClassName))) {
-#ifdef UNICODE
-              if (wcscmp(_szClassName, L"ConsoleWindowClass") == 0) {
+        if (GetCurrentProcessId() == _pId) {
+          TCHAR _szClassName[MAX_PATH];
+          if (GetClassName(hWnd, _szClassName, _countof(_szClassName))) {
+#if defined(UNICODE)
+            if (std::wcscmp(_szClassName, L"ConsoleWindowClass") == 0) {
 #else
-              if (strcmp(_szClassName, "ConsoleWindowClass") == 0) {
+            if (std::strcmp(_szClassName, "ConsoleWindowClass") == 0) {
 #endif
-                return TRUE;
-              }
-
-              *(HWND*)lParam = hWnd;
-              return FALSE;
+              if (GetModuleHandle(TEXT("d3d9.dll")))
+                MirrorHookInternals::InitWithWindowHandle(MirrorHookInternals::Framework::D3D9, hWnd);
+              if (GetModuleHandle(TEXT("d3d11.dll")))
+                MirrorHookInternals::InitWithWindowHandle(MirrorHookInternals::Framework::D3D11, hWnd);
             }
           }
-          return TRUE;
-        },
-        (LPARAM)&_hWnd);
-
-    if (_hWnd) {
-      if (GetModuleHandle(TEXT("d3d9.dll")))
-        MirrorHookInternals::InitWithWindowHandle(MirrorHookInternals::Framework::D3D9, _hWnd);
-      if (GetModuleHandle(TEXT("d3d11.dll")))
-        MirrorHookInternals::InitWithWindowHandle(MirrorHookInternals::Framework::D3D11, _hWnd);
-
-      break;
-    }
-
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-  }
+        }
+        return TRUE;
+      },
+      NULL);
 }
 
 BOOL APIENTRY DllMain(HMODULE hModule, DWORD ul_reason_for_call, LPVOID) {

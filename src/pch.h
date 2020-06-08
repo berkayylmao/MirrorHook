@@ -28,16 +28,16 @@
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <Windows.h>
-// Commonly used headers
+
 #include <chrono>
 #include <cstddef>  // size_t
 #include <cstdint>  // integer types
-#include <memory>   // unique_ptr
+#include <list>
+#include <memory>  // unique_ptr
 #include <mutex>
 #include <thread>
 #include <unordered_map>
 #include <utility>  // pair
-#include <vector>
 #pragma warning(pop)
 
 #define ExportedFunction comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
