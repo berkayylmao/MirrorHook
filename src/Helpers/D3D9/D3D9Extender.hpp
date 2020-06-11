@@ -75,9 +75,13 @@ namespace MirrorHookInternals::D3D9Extender {
     return _ret;
   }
   HRESULT __stdcall hkBeginStateBlock(LPDIRECT3DDEVICE9 pDevice) {
+    mBeginScene.first->Undetour();
     mBeginScene.first.reset();
+    mEndScene.first->Undetour();
     mEndScene.first.reset();
+    mReset.first->Undetour();
     mReset.first.reset();
+    mBeginStateBlock.first->Undetour();
     mBeginStateBlock.first.reset();
     auto _ret = mBeginStateBlock.second(pDevice);
 

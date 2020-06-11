@@ -54,31 +54,42 @@ namespace MemoryEditor {
   class Editor {
    public:
     class DetourInfo {
-      std::uint8_t   mOrigBytes[sizeof(std::uint32_t) + 1];
-      std::uintptr_t mAddrFrom;
-      std::uintptr_t mAddrDetour;
+      bool mHasDetoured;
+
+     protected:
+      std::array<std::uint8_t, sizeof(std::uint32_t) + 1> mOrigBytes;
+      std::uintptr_t                                      mAddrFrom;
+      std::uintptr_t                                      mAddrDetour;
 
      public:
-      std::uintptr_t GetAddrFrom() { return mAddrFrom; }
-      std::uintptr_t GetAddrDetour() { return mAddrDetour; }
+      std::uintptr_t GetAddrFrom() const { return mAddrFrom; }
+      std::uintptr_t GetAddrDetour() const { return mAddrDetour; }
+      bool           GetHasDetoured() const { return mHasDetoured; }
 
       void Detour() {
-        Editor::Get().UnlockMemory(mAddrFrom, sizeof(std::uint32_t) + 1);
-        std::memcpy(mOrigBytes, reinterpret_cast<void*>(mAddrFrom), sizeof(std::uint32_t) + 1);
-        Editor::Get().LockMemory(mAddrFrom);
+        if (mHasDetoured) return;
+
         Editor::Get().Make(MakeType::Jump, mAddrFrom, mAddrDetour);
+        mHasDetoured = true;
       }
-      void Undetour() const {
+      void Undetour() {
+        if (!mHasDetoured) return;
+
         Editor::Get().UnlockMemory(mAddrFrom, sizeof(std::uint32_t) + 1);
-        std::memcpy(reinterpret_cast<void*>(mAddrFrom), mOrigBytes, sizeof(std::uint32_t) + 1);
+        std::memcpy(reinterpret_cast<void*>(mAddrFrom), mOrigBytes.data(), sizeof(std::uint32_t) + 1);
         Editor::Get().LockMemory(mAddrFrom);
+        mHasDetoured = false;
       }
 
+      // Detours immediately
       explicit DetourInfo(std::uintptr_t addrFrom, std::uintptr_t addrDetour) :
-          mOrigBytes{0x00}, mAddrFrom(addrFrom), mAddrDetour(addrDetour) {
+          mHasDetoured(false), mAddrFrom(addrFrom), mAddrDetour(addrDetour) {
+        Editor::Get().UnlockMemory(mAddrFrom, sizeof(std::uint32_t) + 1);
+        std::memcpy(mOrigBytes.data(), reinterpret_cast<void*>(mAddrFrom), sizeof(std::uint32_t) + 1);
+        Editor::Get().LockMemory(mAddrFrom);
+
         Detour();
       }
-      ~DetourInfo() { Undetour(); }
     };
 
    protected:
