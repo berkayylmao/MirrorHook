@@ -46,8 +46,13 @@ namespace MirrorHookInternals::D3D9Extender {
   std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, EndScene_t>        mEndScene;
   std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, Reset_t>           mReset;
   std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, BeginStateBlock_t> mBeginStateBlock;
+  // waiting list (for BeginScene)
+  std::vector<EndScene_t> vWaitingExtsBeginScene;
 
   HRESULT __stdcall hkBeginScene(LPDIRECT3DDEVICE9 pDevice) {
+    for (const auto& _ext : vWaitingExtsBeginScene) mEndSceneExts.push_back(_ext);
+    vWaitingExtsBeginScene.clear();
+
     for (const auto& _ext : mBeginSceneExts) _ext(pDevice);
 
     mBeginScene.first->Undetour();
@@ -110,7 +115,7 @@ namespace MirrorHookInternals::D3D9Extender {
         mBeginSceneExts.push_back(reinterpret_cast<BeginScene_t>(pExtension));
         return true;
       case D3D9Extension::EndScene:
-        mEndSceneExts.push_back(reinterpret_cast<EndScene_t>(pExtension));
+        vWaitingExtsBeginScene.push_back(reinterpret_cast<EndScene_t>(pExtension));
         return true;
       case D3D9Extension::BeforeReset:
         mBefResetExts.push_back(reinterpret_cast<Reset_t>(pExtension));
