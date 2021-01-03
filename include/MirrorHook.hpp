@@ -27,34 +27,41 @@
   #include <WinDef.h>       // HWND
   #pragma warning(pop)
 
+struct IDirect3DDevice9;
+struct IDXGISwapChain;
+
 namespace MirrorHook {
   enum class Framework { None, D3D9, D3D11 };
 
   inline bool Init(const Framework framework, const wchar_t* const szWindowTitle) {
-    return reinterpret_cast<bool(__stdcall*)(Framework, const wchar_t* const)>(
+    return reinterpret_cast<bool(__stdcall*)(const Framework, const wchar_t* const)>(
       GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::InitWithWindowTitle"))(framework, szWindowTitle);
   }
   inline bool Init(const Framework framework, const HWND& hWnd) {
-    return reinterpret_cast<bool(__stdcall*)(Framework, HWND&)>(
+    return reinterpret_cast<bool(__stdcall*)(const Framework, const HWND&)>(
       GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::InitWithWindowHandle"))(framework, hWnd);
   }
-  inline bool Init(const Framework framework, void** ppDevice) {
-    return reinterpret_cast<bool(__stdcall*)(Framework, void**)>(
+  inline bool Init(const Framework framework, IDirect3DDevice9** ppDevice) {
+    return reinterpret_cast<bool(__stdcall*)(const Framework, IDirect3DDevice9**)>(
       GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::InitWithDevicePointer"))(framework, ppDevice);
   }
 
   namespace D3D9 {
     enum class Type { BeginScene, EndScene, BeforeReset, AfterReset };
 
-    inline bool AddExtension(const Type type, void(__stdcall* pExtension)(void*)) {
-      return reinterpret_cast<bool(__stdcall*)(const Type, void(__stdcall*)(void*))>(
+    inline bool AddExtension(const Type type, void(__stdcall* pExtension)(IDirect3DDevice9* pDevice)) {
+      return reinterpret_cast<bool(__stdcall*)(const Type, void(__stdcall*)(IDirect3DDevice9*))>(
+        GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::details::AddExtension"))(type, pExtension);
+    }
+    inline bool AddExtension(const Type type, void(__stdcall* pExtension)(IDirect3DDevice9* pDevice, void* pPresentationParameters)) {
+      return reinterpret_cast<bool(__stdcall*)(const Type, void(__stdcall*)(IDirect3DDevice9*, void*))>(
         GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D9Extender::details::AddExtension"))(type, pExtension);
     }
   } // namespace D3D9
   namespace D3D11 {
     enum class Type { Present };
 
-    inline bool AddExtension(const Type type, void(__stdcall* pExtension)(void* pIDXGISwapChain, UINT SyncInterval, UINT Flags)) {
+    inline bool AddExtension(const Type type, void(__stdcall* pExtension)(IDXGISwapChain* SwapChain, UINT SyncInterval, UINT Flags)) {
       return reinterpret_cast<bool(__stdcall*)(const Type, void(__stdcall*)(IDXGISwapChain*, UINT, UINT))>(
         GetProcAddress(GetModuleHandle(TEXT("MirrorHook.dll")), "MirrorHookInternals::D3D11Extender::details::AddExtension"))(type, pExtension);
     }
