@@ -20,9 +20,9 @@
 #pragma once
 #pragma warning(push, 0)
 // Win32 targeting
-#include <WinSDKVer.h>
-#define _WIN32_WINNT _WIN32_WINNT_WIN7
-#include <SDKDDKVer.h>
+#include <winsdkver.h>
+#define _WIN32_WINNT 0x0501 // _WIN32_WINNT_WINXP
+#include <sdkddkver.h>
 // Win32
 #define _CRT_SECURE_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
@@ -30,14 +30,14 @@
 #include <Windows.h>
 
 #include <chrono>
-#include <cstddef>  // size_t
-#include <cstdint>  // integer types
-#include <list>
+#include <cstddef> // size_t
+#include <cstdint> // integer types
 #include <memory>  // unique_ptr
 #include <mutex>
 #include <thread>
 #include <unordered_map>
-#include <utility>  // pair
+#include <utility> // pair
+#include <vector>
 #pragma warning(pop)
 
-#define ExportedFunction comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)
+#define __EXPORTED_FUNCTION__ comment(linker, "/EXPORT:" __FUNCTION__ "=" __FUNCDNAME__)

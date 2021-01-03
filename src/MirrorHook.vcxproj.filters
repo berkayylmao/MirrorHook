@@ -1,63 +1,59 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="default">
-      <UniqueIdentifier>{6fd2b156-9719-4314-9084-d02d78643eaa}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Helpers">
-      <UniqueIdentifier>{97573e01-9f0c-4750-8c7d-3863ef3242eb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Helpers">
-      <UniqueIdentifier>{254145d7-4f1a-4b4e-8d3d-bd2624a01a06}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Helpers\D3D9">
-      <UniqueIdentifier>{f1d42127-df4e-4eb6-af76-e537e8f2b148}</UniqueIdentifier>
+      <UniqueIdentifier>{4ef00b36-fff5-4d3c-b1ff-75ec733e7481}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Helpers">
+      <UniqueIdentifier>{a3e9d806-d660-4733-b7e1-ef2d2d876912}</UniqueIdentifier>
     </Filter>
     <Filter Include="Helpers\D3D11">
-      <UniqueIdentifier>{846ccc64-a688-4ee4-8251-ddf4967f80be}</UniqueIdentifier>
+      <UniqueIdentifier>{9cd07da8-b269-4b92-9e9b-c661ce1eb251}</UniqueIdentifier>
     </Filter>
     <Filter Include="Helpers\WndProc">
-      <UniqueIdentifier>{3b5d6179-56a6-413c-8254-95e09c34ff89}</UniqueIdentifier>
+      <UniqueIdentifier>{5654f214-04e1-486c-bcab-0712416ad610}</UniqueIdentifier>
     </Filter>
     <Filter Include="Helpers\MemoryEditor">
-      <UniqueIdentifier>{e5e02906-ab45-4d60-922a-06f0c95cec7f}</UniqueIdentifier>
+      <UniqueIdentifier>{eb941bf0-de38-4c42-87eb-cf70c7c42ad1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="_vs">
+      <UniqueIdentifier>{6288f35b-38bb-42d1-a9eb-bb9d4187d946}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="_win32entry">
+      <UniqueIdentifier>{6d12ff1a-a527-464b-998b-b2cc5176e33f}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="resource.h">
-      <Filter>default</Filter>
+    <ClInclude Include="Helpers\D3D9\D3D9Extender.hpp">
+      <Filter>Helpers\D3D9</Filter>
     </ClInclude>
     <ClInclude Include="Helpers\D3D11\D3D11Extender.hpp">
       <Filter>Helpers\D3D11</Filter>
     </ClInclude>
-    <ClInclude Include="Helpers\D3D9\D3D9Extender.hpp">
-      <Filter>Helpers\D3D9</Filter>
-    </ClInclude>
     <ClInclude Include="Helpers\WndProc\WndProcExtender.hpp">
       <Filter>Helpers\WndProc</Filter>
-    </ClInclude>
-    <ClInclude Include="pch.h">
-      <Filter>default</Filter>
     </ClInclude>
     <ClInclude Include="Helpers\MemoryEditor\MemoryEditor.hpp">
       <Filter>Helpers\MemoryEditor</Filter>
     </ClInclude>
+    <ClInclude Include="_vs\resource.h">
+      <Filter>_vs</Filter>
+    </ClInclude>
+    <ClInclude Include="_vs\pch.h">
+      <Filter>_vs</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="pch.cpp">
-      <Filter>default</Filter>
+    <ClCompile Include="_win32entry\dllmain.cpp">
+      <Filter>_win32entry</Filter>
+    </ClCompile>
+    <ClCompile Include="_vs\pch.cpp">
+      <Filter>_vs</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="version.rc">
-      <Filter>default</Filter>
+    <ResourceCompile Include="_vs\version.rc">
+      <Filter>_vs</Filter>
     </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="Helpers\MemoryEditor\MemoryEditor.licenseheader">
-      <Filter>Helpers\MemoryEditor</Filter>
-    </None>
-    <None Include="MirrorHook.licenseheader" />
   </ItemGroup>
 </Project>
