@@ -62,8 +62,8 @@ namespace MirrorHook {
   namespace WndProc {
     constexpr LRESULT g_constIgnoreThisReturn = -1;
 
-    inline void AddExtension(void(__stdcall* pExtension)(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)) {
-      reinterpret_cast<void(__stdcall*)(void(__stdcall*)(HWND, UINT, WPARAM, LPARAM))>(
+    inline void AddExtension(LRESULT(__stdcall* pExtension)(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)) {
+      reinterpret_cast<void(__stdcall*)(LRESULT(__stdcall*)(HWND, UINT, WPARAM, LPARAM))>(
         GetProcAddress(GetModuleHandle(TEXT("MirrorHook.asi")), "MirrorHookInternals::WndProcExtender::details::AddExtension"))(pExtension);
     }
     inline HWND GetWindowHandle() {

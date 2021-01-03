@@ -49,7 +49,7 @@ namespace MirrorHookInternals::WndProcExtender {
     }
 #pragma endregion
 #pragma region Exported
-    [[maybe_unused]]  void __stdcall AddExtension(void(__stdcall* pExtension)(HWND, UINT, WPARAM, LPARAM)) {
+    [[maybe_unused]]  void __stdcall AddExtension(LRESULT(__stdcall* pExtension)(HWND, UINT, WPARAM, LPARAM)) {
 #pragma __EXPORTED_FUNCTION__
       if (!pExtension) return;
       std::scoped_lock<std::mutex> _l(InternalMutex);
