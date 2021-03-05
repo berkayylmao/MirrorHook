@@ -20,12 +20,12 @@
 
 #pragma once
 #ifndef __MIRRORHOOK_INCLUDED__
-#define __MIRRORHOOK_INCLUDED__
+  #define __MIRRORHOOK_INCLUDED__
 
-#pragma warning(push, 0)
-#include <libloaderapi.h> // GetModuleHandle
-#include <WinDef.h>       // HWND, HMODULE, TCHAR, FARPROC
-#pragma warning(pop)
+  #pragma warning(push, 0)
+  #include <libloaderapi.h> // GetModuleHandle
+  #include <WinDef.h>       // HWND, HMODULE, TCHAR, FARPROC
+  #pragma warning(pop)
 
 struct IDirect3DDevice9;
 struct IDXGISwapChain;
@@ -44,19 +44,19 @@ namespace MirrorHook {
     if (!IsMirrorHookLoaded()) return Result::NotLoaded;
 
     const auto fn = reinterpret_cast<bool(__stdcall*)(const Framework, const wchar_t* const)>(GetFn("MirrorHookInternals::InitWithWindowTitle"));
-    return fn ? Result::NoFunction : fn(framework, szWindowTitle) ? Result::Successful : Result::Failed;
+    return !fn ? Result::NoFunction : fn(framework, szWindowTitle) ? Result::Successful : Result::Failed;
   }
   inline Result Init(const Framework framework, const HWND& hWnd) {
     if (!IsMirrorHookLoaded()) return Result::NotLoaded;
 
     const auto fn = reinterpret_cast<bool(__stdcall*)(const Framework, const HWND&)>(GetFn("MirrorHookInternals::InitWithWindowHandle"));
-    return fn ? Result::NoFunction : fn(framework, hWnd) ? Result::Successful : Result::Failed;
+    return !fn ? Result::NoFunction : fn(framework, hWnd) ? Result::Successful : Result::Failed;
   }
   inline Result Init(const Framework framework, IDirect3DDevice9** ppDevice) {
     if (!IsMirrorHookLoaded()) return Result::NotLoaded;
 
     const auto fn = reinterpret_cast<bool(__stdcall*)(const Framework, IDirect3DDevice9**)>(GetFn("MirrorHookInternals::InitWithDevicePointer"));
-    return fn ? Result::NoFunction : fn(framework, ppDevice) ? Result::Successful : Result::Failed;
+    return !fn ? Result::NoFunction : fn(framework, ppDevice) ? Result::Successful : Result::Failed;
   }
 
   namespace D3D9 {
@@ -67,14 +67,14 @@ namespace MirrorHook {
 
       const auto fn = reinterpret_cast<bool(__stdcall*)(const Type, void(__stdcall*)(IDirect3DDevice9*))>(
         GetFn("MirrorHookInternals::D3D9Extender::details::AddExtension"));
-      return fn ? Result::NoFunction : fn(type, pExtension) ? Result::Successful : Result::Failed;
+      return !fn ? Result::NoFunction : fn(type, pExtension) ? Result::Successful : Result::Failed;
     }
     inline Result AddExtension(const Type type, void(__stdcall* pExtension)(IDirect3DDevice9* pDevice, void* pPresentationParameters)) {
       if (!IsMirrorHookLoaded()) return Result::NotLoaded;
 
       const auto fn = reinterpret_cast<bool(__stdcall*)(const Type, void(__stdcall*)(IDirect3DDevice9*, void*))>(
         GetFn("MirrorHookInternals::D3D9Extender::details::AddExtension"));
-      return fn ? Result::NoFunction : fn(type, pExtension) ? Result::Successful : Result::Failed;
+      return !fn ? Result::NoFunction : fn(type, pExtension) ? Result::Successful : Result::Failed;
     }
   } // namespace D3D9
   namespace D3D11 {
@@ -85,7 +85,7 @@ namespace MirrorHook {
 
       const auto fn = reinterpret_cast<bool(__stdcall*)(const Type, void(__stdcall*)(IDXGISwapChain*, UINT, UINT))>(
         GetFn("MirrorHookInternals::D3D11Extender::details::AddExtension"));
-      return fn ? Result::NoFunction : fn(type, pExtension) ? Result::Successful : Result::Failed;
+      return !fn ? Result::NoFunction : fn(type, pExtension) ? Result::Successful : Result::Failed;
     }
   } // namespace D3D11
   namespace WndProc {
@@ -108,7 +108,7 @@ namespace MirrorHook {
       if (!IsMirrorHookLoaded()) return nullptr;
 
       const auto fn = reinterpret_cast<HWND(__stdcall*)()>(GetFn("MirrorHookInternals::WndProcExtender::details::GetWindowHandle"));
-      return fn ? nullptr : fn();
+      return !fn ? nullptr : fn();
     }
   } // namespace WndProc
 } // namespace MirrorHook
