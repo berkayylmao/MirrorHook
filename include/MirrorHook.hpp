@@ -76,6 +76,15 @@ namespace MirrorHook {
         GetFn("MirrorHookInternals::D3D9Extender::details::AddExtension"));
       return !fn ? Result::NoFunction : fn(type, pExtension) ? Result::Successful : Result::Failed;
     }
+    inline Result AddExtension(
+      const Type type,
+      void(__stdcall* pExtension)(IDirect3DDevice9* pDevice, void* pSourceRect, void* pDestRect, HWND hDestWindowOverride, void* pDirtyRegion)) {
+      if (!IsMirrorHookLoaded()) return Result::NotLoaded;
+
+      const auto fn = reinterpret_cast<bool(__stdcall*)(const Type, void(__stdcall*)(IDirect3DDevice9*, void*, void*, HWND, void*))>(
+        GetFn("MirrorHookInternals::D3D9Extender::details::AddExtension"));
+      return !fn ? Result::NoFunction : fn(type, pExtension) ? Result::Successful : Result::Failed;
+    }
   } // namespace D3D9
   namespace D3D11 {
     enum class Type { Present };
