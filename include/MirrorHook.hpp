@@ -60,7 +60,7 @@ namespace MirrorHook {
   }
 
   namespace D3D9 {
-    enum class Type { BeginScene, EndScene, BeforeReset, AfterReset };
+    enum class Type { BeforeReset, AfterReset, Present, BeginScene, EndScene };
 
     inline Result AddExtension(const Type type, void(__stdcall* pExtension)(IDirect3DDevice9* pDevice)) {
       if (!IsMirrorHookLoaded()) return Result::NotLoaded;

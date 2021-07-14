@@ -27,17 +27,17 @@
 #pragma warning(push, 0)
 #include <D3D11.h>
 #pragma warning(pop)
-using Present_t = HRESULT(__stdcall*)(IDXGISwapChain*, UINT, UINT);
+using D3D11Present_t = HRESULT(__stdcall*)(IDXGISwapChain*, UINT, UINT);
 
 namespace MirrorHookInternals::D3D11Extender {
   enum class D3D11Extension { Present };
 
   namespace details {
-    static inline std::mutex           InternalMutex;
-    static inline std::list<Present_t> PresentExts;
+    static inline std::mutex                InternalMutex;
+    static inline std::list<D3D11Present_t> PresentExts;
 
 #pragma region Hooks
-    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, Present_t> PresentDetour;
+    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D11Present_t> PresentDetour;
 
     static auto __stdcall hkPresent(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) -> HRESULT {
       // call original
@@ -57,7 +57,7 @@ namespace MirrorHookInternals::D3D11Extender {
       std::scoped_lock<std::mutex> _l(InternalMutex);
 
       if (type == D3D11Extension::Present) {
-        PresentExts.push_back(reinterpret_cast<Present_t>(pExtension));
+        PresentExts.push_back(reinterpret_cast<D3D11Present_t>(pExtension));
         return true;
       }
       return false;
@@ -66,7 +66,7 @@ namespace MirrorHookInternals::D3D11Extender {
 
     inline void DoHook(std::uintptr_t vtDevice[]) {
       PresentDetour = {MemoryEditor::Get().Detour(vtDevice[8], reinterpret_cast<std::uintptr_t>(&hkPresent)),
-                       reinterpret_cast<Present_t>(vtDevice[8])};
+                       reinterpret_cast<D3D11Present_t>(vtDevice[8])};
     }
   } // namespace details
 

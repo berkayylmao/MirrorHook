@@ -27,29 +27,33 @@
 #pragma warning(push, 0)
 #include <d3d9.h>
 #pragma warning(pop)
-using Reset_t           = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9, D3DPRESENT_PARAMETERS*);
-using BeginScene_t      = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9);
-using EndScene_t        = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9);
-using BeginStateBlock_t = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9);
+using D3D9Reset_t           = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9, D3DPRESENT_PARAMETERS*);
+using D3D9Present_t         = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9, const RECT*, const RECT*, HWND, const RGNDATA*);
+using D3D9BeginScene_t      = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9);
+using D3D9EndScene_t        = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9);
+using D3D9BeginStateBlock_t = HRESULT(__stdcall*)(LPDIRECT3DDEVICE9);
 
 namespace MirrorHookInternals::D3D9Extender {
-  enum class D3D9Extension { BeginScene, EndScene, BeforeReset, AfterReset };
+  enum class D3D9Extension { BeforeReset, AfterReset, Present, BeginScene, EndScene };
 
   namespace details {
-    static inline std::mutex                InternalMutex;
-    static inline std::vector<BeginScene_t> BeginSceneExts;
-    static inline std::vector<EndScene_t>   EndSceneExts;
-    static inline std::vector<Reset_t>      BeforeResetExts;
-    static inline std::vector<Reset_t>      AfterRestExts;
+    static inline std::mutex                    InternalMutex;
+    static inline std::vector<D3D9Reset_t>      BeforeResetExts;
+    static inline std::vector<D3D9Reset_t>      AfterRestExts;
+    static inline std::vector<D3D9Present_t>    PresentExts;
+    static inline std::vector<D3D9BeginScene_t> BeginSceneExts;
+    static inline std::vector<D3D9EndScene_t>   EndSceneExts;
 
 #pragma region Hooks
     // detours
-    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, BeginScene_t>      BeginSceneDetour;
-    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, EndScene_t>        EndSceneDetour;
-    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, Reset_t>           ResetDetour;
-    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, BeginStateBlock_t> BeginStateBlockDetour;
+    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9Reset_t>           ResetDetour;
+    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9Present_t>         PresentDetour;
+    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9BeginScene_t>      BeginSceneDetour;
+    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9EndScene_t>        EndSceneDetour;
+    static inline std::pair<std::unique_ptr<MemoryEditor::Editor::DetourInfo>, D3D9BeginStateBlock_t> BeginStateBlockDetour;
+
     // waiting list (for BeginScene)
-    static inline std::vector<EndScene_t> BeginSceneWaitingExts;
+    static inline std::vector<D3D9EndScene_t> BeginSceneWaitingExts;
 
     inline auto __stdcall hkBeginScene(LPDIRECT3DDEVICE9 pDevice) -> HRESULT {
       // call original
@@ -89,27 +93,44 @@ namespace MirrorHookInternals::D3D9Extender {
       return _ret;
     }
 
+    inline auto __stdcall hkPresent(
+      LPDIRECT3DDEVICE9 pDevice, const RECT* pSourceRect, const RECT* pDestRect, HWND hDestWindowOverride, const RGNDATA* pDirtyRegion) -> HRESULT {
+      // cal original
+      PresentDetour.first->Undetour();
+      const auto _ret = PresentDetour.second(pDevice, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+      PresentDetour.first->Detour();
+      // call extensions
+      for (const auto& _ext : PresentExts) _ext(pDevice, pSourceRect, pDestRect, hDestWindowOverride, pDirtyRegion);
+      // return original
+      return _ret;
+    }
+
     inline auto __stdcall hkBeginStateBlock(LPDIRECT3DDEVICE9 pDevice) -> HRESULT {
       // reverse all detours
+      ResetDetour.first->Undetour();
+      ResetDetour.first.reset();
+      PresentDetour.first->Undetour();
+      PresentDetour.first.reset();
       BeginSceneDetour.first->Undetour();
       BeginSceneDetour.first.reset();
       EndSceneDetour.first->Undetour();
       EndSceneDetour.first.reset();
-      ResetDetour.first->Undetour();
-      ResetDetour.first.reset();
       BeginStateBlockDetour.first->Undetour();
       BeginStateBlockDetour.first.reset();
       // call original
       const auto _ret = BeginStateBlockDetour.second(pDevice);
       // detour all
       auto* _vtDevice       = *reinterpret_cast<std::uintptr_t**>(pDevice);
-      BeginStateBlockDetour = {MemoryEditor::Get().Detour(_vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock)),
-                               reinterpret_cast<BeginStateBlock_t>(_vtDevice[60])};
+      ResetDetour           = {MemoryEditor::Get().Detour(_vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset)),
+                     reinterpret_cast<D3D9Reset_t>(_vtDevice[16])};
+      PresentDetour         = {MemoryEditor::Get().Detour(_vtDevice[17], reinterpret_cast<std::uintptr_t>(&hkPresent)),
+                       reinterpret_cast<D3D9Present_t>(_vtDevice[17])};
       BeginSceneDetour      = {MemoryEditor::Get().Detour(_vtDevice[41], reinterpret_cast<std::uintptr_t>(&hkBeginScene)),
-                          reinterpret_cast<BeginScene_t>(_vtDevice[41])};
+                          reinterpret_cast<D3D9BeginScene_t>(_vtDevice[41])};
       EndSceneDetour        = {MemoryEditor::Get().Detour(_vtDevice[42], reinterpret_cast<std::uintptr_t>(&hkEndScene)),
-                        reinterpret_cast<EndScene_t>(_vtDevice[42])};
-      ResetDetour = {MemoryEditor::Get().Detour(_vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset)), reinterpret_cast<Reset_t>(_vtDevice[16])};
+                        reinterpret_cast<D3D9EndScene_t>(_vtDevice[42])};
+      BeginStateBlockDetour = {MemoryEditor::Get().Detour(_vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock)),
+                               reinterpret_cast<D3D9BeginStateBlock_t>(_vtDevice[60])};
       // return original
       return _ret;
     }
@@ -121,17 +142,20 @@ namespace MirrorHookInternals::D3D9Extender {
       std::scoped_lock<std::mutex> _l(InternalMutex);
 
       switch (type) {
-        case D3D9Extension::BeginScene:
-          BeginSceneExts.push_back(reinterpret_cast<BeginScene_t>(pExtension));
-          return true;
-        case D3D9Extension::EndScene:
-          BeginSceneWaitingExts.push_back(reinterpret_cast<EndScene_t>(pExtension));
-          return true;
         case D3D9Extension::BeforeReset:
-          BeforeResetExts.push_back(reinterpret_cast<Reset_t>(pExtension));
+          BeforeResetExts.push_back(reinterpret_cast<D3D9Reset_t>(pExtension));
           return true;
         case D3D9Extension::AfterReset:
-          AfterRestExts.push_back(reinterpret_cast<Reset_t>(pExtension));
+          AfterRestExts.push_back(reinterpret_cast<D3D9Reset_t>(pExtension));
+          return true;
+        case D3D9Extension::Present:
+          PresentExts.push_back(reinterpret_cast<D3D9Present_t>(pExtension));
+          return true;
+        case D3D9Extension::BeginScene:
+          BeginSceneExts.push_back(reinterpret_cast<D3D9BeginScene_t>(pExtension));
+          return true;
+        case D3D9Extension::EndScene:
+          BeginSceneWaitingExts.push_back(reinterpret_cast<D3D9EndScene_t>(pExtension));
           return true;
       }
       return false;
@@ -139,13 +163,16 @@ namespace MirrorHookInternals::D3D9Extender {
 #pragma endregion
 
     inline void DoHook(std::uintptr_t vtDevice[]) {
-      BeginStateBlockDetour = {MemoryEditor::Get().Detour(vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock)),
-                               reinterpret_cast<BeginStateBlock_t>(vtDevice[60])};
+      ResetDetour           = {MemoryEditor::Get().Detour(vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset)),
+                     reinterpret_cast<D3D9Reset_t>(vtDevice[16])};
+      PresentDetour         = {MemoryEditor::Get().Detour(vtDevice[17], reinterpret_cast<std::uintptr_t>(&hkPresent)),
+                       reinterpret_cast<D3D9Present_t>(vtDevice[17])};
       BeginSceneDetour      = {MemoryEditor::Get().Detour(vtDevice[41], reinterpret_cast<std::uintptr_t>(&hkBeginScene)),
-                          reinterpret_cast<BeginScene_t>(vtDevice[41])};
+                          reinterpret_cast<D3D9BeginScene_t>(vtDevice[41])};
       EndSceneDetour        = {MemoryEditor::Get().Detour(vtDevice[42], reinterpret_cast<std::uintptr_t>(&hkEndScene)),
-                        reinterpret_cast<EndScene_t>(vtDevice[42])};
-      ResetDetour = {MemoryEditor::Get().Detour(vtDevice[16], reinterpret_cast<std::uintptr_t>(&hkReset)), reinterpret_cast<Reset_t>(vtDevice[16])};
+                        reinterpret_cast<D3D9EndScene_t>(vtDevice[42])};
+      BeginStateBlockDetour = {MemoryEditor::Get().Detour(vtDevice[60], reinterpret_cast<std::uintptr_t>(&hkBeginStateBlock)),
+                               reinterpret_cast<D3D9BeginStateBlock_t>(vtDevice[60])};
     }
   } // namespace details
 
